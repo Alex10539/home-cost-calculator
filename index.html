@@ -87,6 +87,21 @@ a { color: var(--red); }
 .section-head h2 { color: var(--ink); font-size: clamp(1.7rem, 4vw, 2.4rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.14; margin: 12px 0 12px; text-wrap: balance; }
 .section-head p { font-size: 1.05rem; color: var(--text); margin: 0; }
 
+/* ================= STATS / CREDIBILITY STRIP ================= */
+.section.stats-band { padding: 32px 0; }
+.stats-band { background: transparent; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; text-align: center; }
+.stat { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 4px 16px; }
+.stat + .stat { border-left: 1px solid var(--border); }
+.stat-num { font-family: var(--head); font-weight: 700; font-size: clamp(1.75rem, 4vw, 2.4rem); color: var(--red); letter-spacing: -0.02em; line-height: 1.05; }
+.stat-num.place { font-size: clamp(1.2rem, 2.7vw, 1.55rem); text-wrap: balance; max-width: 12ch; }
+.stat-label { font-family: var(--head); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-top: 8px; }
+@media (max-width: 560px) {
+  .stats-row { grid-template-columns: 1fr; }
+  .stat { padding: 16px 16px; }
+  .stat + .stat { border-left: none; border-top: 1px solid var(--border); }
+}
+
 /* ================= CALCULATOR ================= */
 .calc-layout { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: start; }
 @media (max-width: 860px) { .calc-layout { grid-template-columns: 1fr; } }
@@ -636,6 +651,17 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
         </div>
         <a class="btn btn-primary" href="https://innovadesignstudio.ca/#contact-form" target="_blank" rel="noopener">Book a free consult →</a>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== STATS / CREDIBILITY ===================== -->
+<section class="section stats-band">
+  <div class="wrap">
+    <div class="stats-row">
+      <div class="stat"><div class="stat-num">300+</div><div class="stat-label">Homes delivered</div></div>
+      <div class="stat"><div class="stat-num">10+</div><div class="stat-label">Years designing</div></div>
+      <div class="stat"><div class="stat-num place">Atlantic Canada &amp; beyond</div><div class="stat-label">Where we design</div></div>
     </div>
   </div>
 </section>

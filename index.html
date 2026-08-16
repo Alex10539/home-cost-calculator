@@ -778,11 +778,9 @@ const PRICING_CONFIG = {
   estimateRange: { margin: 0.10, roundTo: 1000 },
 };
 
-// ── LEADS EMAIL (Web3Forms) ──
-// Access key is registered to alexander@innovadesignstudio.ca — submissions email there.
-// NOTE: cc'ing a 2nd address (admin@) requires Web3Forms Pro. On the free plan, set up a
-// Gmail forward/filter from alexander@ to admin@, or upgrade. Rotate the key at web3forms.com.
-const WEB3FORMS_ACCESS_KEY = "08b8b2be-3357-427b-b801-ad4fcd160b43";
+// ── LEADS EMAIL (Formsubmit.co) ──
+// No API key. Submissions email to alexander@ and cc admin@ (free). The first submission
+// triggers a one-time activation email to alexander@ — click it once to go live.
 </script>
 <script>
 const form = document.getElementById('calculator-form');
@@ -960,23 +958,25 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 
 // ---- Lead capture ----
 function notifyLead(name, email, c) {
-  if (!WEB3FORMS_ACCESS_KEY || WEB3FORMS_ACCESS_KEY === "YOUR_WEB3FORMS_KEY_HERE") return;
-  const payload = {
-    access_key: WEB3FORMS_ACCESS_KEY,
-    subject: `New Home Cost Calculator lead: ${name}`,
-    from_name: "Home Cost Calculator",
-    Name: name, Email: email,
-    "Price guide range": c ? `${formatCurrency(c.low)} – ${formatCurrency(c.high)}` : "(none)",
-    "Living area (sqft)": c ? c.livingSqft : "",
-    "Levels": getRadioValue('levels'), "Foundation": getRadioValue('foundation'),
-    "Garage sqft": c ? c.garageSqft : "", "Finishes": getRadioValue('finishes'), "Kitchen": getRadioValue('kitchen'),
-  };
+  const fd = new FormData();
+  fd.append('_subject', `New Home Cost Calculator lead: ${name}`);
+  fd.append('_cc', 'admin@innovadesignstudio.ca');
+  fd.append('_template', 'table');
+  fd.append('_captcha', 'false');
+  fd.append('Name', name);
+  fd.append('Email', email);
+  fd.append('Price guide range', c ? `${formatCurrency(c.low)} – ${formatCurrency(c.high)}` : '(none)');
+  fd.append('Living area (sqft)', c ? c.livingSqft : '');
+  fd.append('Levels', getRadioValue('levels'));
+  fd.append('Foundation', getRadioValue('foundation'));
+  fd.append('Garage sqft', c ? c.garageSqft : '');
+  fd.append('Finishes', getRadioValue('finishes'));
+  fd.append('Kitchen', getRadioValue('kitchen'));
   try {
-    fetch("https://api.web3forms.com/submit", {
-      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(payload),
-    }).catch((e) => console.error("Lead notify failed:", e));
-  } catch (e) { console.error("Lead notify failed:", e); }
+    fetch('https://formsubmit.co/ajax/alexander@innovadesignstudio.ca', {
+      method: 'POST', headers: { Accept: 'application/json' }, body: fd,
+    }).catch((e) => console.error('Lead notify failed:', e));
+  } catch (e) { console.error('Lead notify failed:', e); }
 }
 
 document.getElementById('lead-form').addEventListener('submit', (e) => {

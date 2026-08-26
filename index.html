@@ -393,10 +393,10 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
         <section class="field-group">
           <label>Foundation Type</label>
           <div class="option-row" data-field="foundation">
-            <label class="option"><input type="radio" name="foundation" value="slabThickenedFooting" checked> Slab — Thickened Footing</label>
+            <label class="option"><input type="radio" name="foundation" value="slabThickenedFooting"> Slab — Thickened Footing</label>
             <label class="option"><input type="radio" name="foundation" value="slab5ftFrostWall"> Slab — 5' Frost Wall</label>
             <label class="option"><input type="radio" name="foundation" value="crawlSpace"> Crawl Space</label>
-            <label class="option"><input type="radio" name="foundation" value="fullBasement8"> Full 8' Basement</label>
+            <label class="option"><input type="radio" name="foundation" value="fullBasement8" checked> Full 8' Basement</label>
             <label class="option"><input type="radio" name="foundation" value="fullBasement9"> Full 9' Basement</label>
           </div>
           <div class="conditional-block" id="basementFinishBlock" style="display:none;">
@@ -782,27 +782,77 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
 </div>
 
 <script>
+// ─────────────────────────────────────────────────────────────────────────────
+// PRICING SOURCE: Josh Lajoie Renovations Ltd. — "New Home Construction Budgeting
+// Guide V1" (Greater Moncton / SE New Brunswick, 2026). Conservative selling-price
+// allowances, BEFORE HST. Base anchored at a ~1,500 sqft good-standard home.
+//   [JOSH] = taken directly from the guide.
+//   [EST]  = interpolated / assumed by us — GAP to confirm with more contractors.
+// Model: livingRate = base × sizeMult × storeyMult × finishGrade + additive $/sqft.
+// The base $325 ALREADY INCLUDES a full unfinished basement, so slab/piles are a
+// DISCOUNT (negative), not an add.
+// ─────────────────────────────────────────────────────────────────────────────
 const PRICING_CONFIG = {
-  basePricePerSqft: 180,
-  levels: { "1": 1, "1.5": 1.5, "2": 2 },
+  basePricePerSqft: 325,                                   // [JOSH §1] good-standard build, incl. full unfinished basement
+  levels: { "1": 1, "1.5": 1.5, "2": 2 },                  // used to derive footprint = living / levels
+
+  // Multiplier on the living rate by TOTAL finished area — small homes cost more
+  // per sqft (fixed costs spread over less area). Piecewise-linear between points. [JOSH §2]
+  sizeMultiplier: [
+    [1000, 1.20], [1250, 1.08], [1500, 1.00],
+    [1750, 0.94], [2000, 0.90], [2250, 0.88], [2500, 0.875],
+  ],
+
+  // Storey efficiency on the living rate — stacking saves foundation/roof area. [JOSH §3]
+  storeyMultiplier: { "1": 1.00, "1.5": 0.95, "2": 0.90 },
+
+  // Overall interior finish grade — multiplier on the living rate. [JOSH §7]
+  finishGrade: { low: 0.90, medium: 1.00, high: 1.20 },    // builder / standard / high-end
+
+  // Additive $ per sqft of finished LIVING area:
   perLivingSqftModifiers: {
-    finishes: { low: -15, medium: 0, high: 35 },
-    ceilingHeight: { baseFeet: 8, perFootOver: 4 },
-    insulation: { regularBatt: 0, sprayFoam: 6, battPlusRigid: 3 },
-    windowDoorPackage: { package7: 0, package8: 4 },
-    cladding: { vinyl: 0, metal: 7, fiberCement: 9, boardAndBatten: 6, stoneAccenting: 11, brickStone: 14 },
-    heating: { baseboard: 0, forcedAir: 4, geothermal: 18, minisplitBaseboard: 10 },
+    ceilingHeight: { baseFeet: 8, perFootOver: 5 },        // [JOSH §14] 10ft = +$10/sqft over the 8ft baseline
+    windowDoorPackage: { package7: 0, package8: 20 },      // [JOSH §8] premium/upgraded window pkg +$20/sqft
+    insulation: { regularBatt: 0, sprayFoam: 6, battPlusRigid: 3 },   // [EST] guide folds insulation into baseline
+    cladding: { vinyl: 0, metal: 7, fiberCement: 9, boardAndBatten: 6, stoneAccenting: 11, brickStone: 14 }, // [EST] guide silent; vinyl = baseline
   },
+
+  // Additive $ per sqft of FOOTPRINT (footprint = living / levels):
   perFootprintModifiers: {
-    roofDesign: { shed: 0, gable: 3, hip: 5, multiple: 9 },
-    foundation: { slabThickenedFooting: 0, slab5ftFrostWall: 6, crawlSpace: 12, fullBasement8: 55, fullBasement9: 65 },
+    roofDesign: { shed: 0, gable: 0, hip: 25, multiple: 50 },   // [JOSH §6] baseline low-pitch gable = $0; hip 20-30, complex 40-60
+    // [JOSH §4] baseline = full unfinished basement ($0). Slab/crawl are DISCOUNTS.
+    foundation: { fullBasement8: 0, fullBasement9: 8, crawlSpace: -30, slab5ftFrostWall: -40, slabThickenedFooting: -45 },
+    // ^ fullBasement8 [JOSH]; slabThickenedFooting ≈ insulated slab-on-grade -45 [JOSH]; 9', crawl, 5ft frost wall [EST]
   },
-  basementFinish: { pricePerFootprintSqft: 65 },
-  garage: { pricePerSqft: { unfinished: 65, finished: 110 }, presets: { oneCar: { width: 16, depth: 24 }, twoCar: { width: 24, depth: 24 }, threeCar: { width: 36, depth: 24 } } },
-  flatAdders: { kitchen: { standard: 0, premium: 12000, luxury: 30000 }, bathrooms: { "1": 0, "1.5": 6000, "2": 12000, "2.5": 18000 } },
-  decks: { pricePerSqft: 25 },
-  estimateRange: { margin: 0.10, roundTo: 1000 },
+
+  basementFinish: { pricePerFootprintSqft: 100 },          // [JOSH §17] finish the basement shell: +$100/sqft
+
+  garage: {
+    pricePerSqft: { unfinished: 150, finished: 185 },      // [JOSH §16] standard attached $150; finished/heated $185 [EST, = living-above rate]
+    presets: { oneCar: { width: 16, depth: 24 }, twoCar: { width: 24, depth: 24 }, threeCar: { width: 36, depth: 24 } },
+  },
+  decks: { pricePerSqft: 65 },                             // [JOSH §15] basic PT deck + typical railings/stairs
+
+  flatAdders: {
+    kitchen: { standard: 0, premium: 12500, luxury: 25000 },        // [JOSH §9] $25k allowance; upgraded 1.5x (+$12.5k), high-end 2.0x (+$25k)
+    bathrooms: { "1": 0, "1.5": 12000, "2": 30000, "2.5": 42000 },  // [JOSH §11] +$30k per added full bath; half bath ≈ +$12k [EST]
+    heating: { minisplitBaseboard: 0, baseboard: 0, forcedAir: 25000, geothermal: 45000 }, // [JOSH §12] baseline baseboard+minisplit; forced-air +$25k; geothermal [EST]
+  },
+
+  estimateRange: { margin: 0.10, roundTo: 1000 },          // ±10% guide range
 };
+
+// Piecewise-linear lookup for the size multiplier, clamped at both ends.
+function sizeMultiplier(sqft) {
+  const pts = PRICING_CONFIG.sizeMultiplier;
+  if (sqft <= pts[0][0]) return pts[0][1];
+  if (sqft >= pts[pts.length - 1][0]) return pts[pts.length - 1][1];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i], [x1, y1] = pts[i + 1];
+    if (sqft >= x0 && sqft <= x1) return y0 + (y1 - y0) * (sqft - x0) / (x1 - x0);
+  }
+  return 1;
+}
 
 // ── LEADS EMAIL (Formsubmit.co) ──
 // No API key. Submissions email to alexander@ and cc admin@ (free). The first submission
@@ -874,62 +924,76 @@ function getDeckSqft() { return getRadioValue('decks') === 'none' ? 0 : positive
 
 function calculateEstimate() {
   const livingSqft = positiveNumber(document.getElementById('sqft'));
-  const living = PRICING_CONFIG.perLivingSqftModifiers;
-  const foot = PRICING_CONFIG.perFootprintModifiers;
-  const flats = PRICING_CONFIG.flatAdders;
-  const levels = PRICING_CONFIG.levels[getRadioValue('levels')] || 1;
+  const cfg = PRICING_CONFIG;
+  const living = cfg.perLivingSqftModifiers;
+  const foot = cfg.perFootprintModifiers;
+  const flats = cfg.flatAdders;
+  const levelKey = getRadioValue('levels') || "1";
+  const levels = cfg.levels[levelKey] || 1;
   const footprint = livingSqft / levels;
   const breakdown = [];
 
-  let livingRate = PRICING_CONFIG.basePricePerSqft;
-  breakdown.push(['Base price', `$${PRICING_CONFIG.basePricePerSqft}/sqft`]);
-  const finishes = getRadioValue('finishes'); livingRate += living.finishes[finishes] || 0;
+  // ── Living cost: base × size × storey × finish grade, then additive $/sqft ──
+  const sizeMult = sizeMultiplier(livingSqft);
+  const storeyMult = cfg.storeyMultiplier[levelKey] || 1;
+  const finishMult = cfg.finishGrade[getRadioValue('finishes')] || 1;
+  const baseRate = cfg.basePricePerSqft * sizeMult * storeyMult * finishMult;
+
   const chChoice = getRadioValue('ceilingHeight');
   const chFeet = chChoice === 'other' ? (parseFloat(ceilingHeightOtherInput.value) || living.ceilingHeight.baseFeet) : parseFloat(chChoice);
   const chMod = Math.max(0, chFeet - living.ceilingHeight.baseFeet) * living.ceilingHeight.perFootOver;
-  livingRate += chMod;
-  const insulation = getRadioValue('insulation'); livingRate += living.insulation[insulation] || 0;
-  const wdp = getRadioValue('windowDoorPackage'); livingRate += living.windowDoorPackage[wdp] || 0;
+  const wdp = getRadioValue('windowDoorPackage'); const wdpMod = living.windowDoorPackage[wdp] || 0;
+  const insulation = getRadioValue('insulation'); const insMod = living.insulation[insulation] || 0;
   const sidingSelected = getCheckedValues('cladding');
   const sidingMod = sidingSelected.reduce((sum, v) => sum + (living.cladding[v] || 0), 0);
-  livingRate += sidingMod;
-  const heating = getRadioValue('heating'); livingRate += living.heating[heating] || 0;
+  const addPerSqft = chMod + wdpMod + insMod + sidingMod;
+
+  const livingRate = baseRate + addPerSqft;
   const livingAmount = livingRate * livingSqft;
 
-  let footprintRate = 0;
-  const roofDesign = getRadioValue('roofDesign'); footprintRate += foot.roofDesign[roofDesign] || 0;
-  const foundation = getRadioValue('foundation'); footprintRate += foot.foundation[foundation] || 0;
-  const footprintAmount = footprintRate * footprint;
+  // ── Footprint adjustments (roof + foundation) ──
+  const roofDesign = getRadioValue('roofDesign'); const roofRate = foot.roofDesign[roofDesign] || 0;
+  const foundation = getRadioValue('foundation'); const foundRate = foot.foundation[foundation] || 0;
+  const footprintAmount = (roofRate + foundRate) * footprint;
 
   const basementFinished = isFullBasement(foundation) && getRadioValue('basementFinish') === 'finished';
-  const basementFinishAmount = basementFinished ? footprint * PRICING_CONFIG.basementFinish.pricePerFootprintSqft : 0;
+  const basementFinishAmount = basementFinished ? footprint * cfg.basementFinish.pricePerFootprintSqft : 0;
 
+  // ── Area-based add-ons ──
   const garageSqft = getGarageSqft();
   const garageFinish = getRadioValue('garageFinish') || 'unfinished';
-  const garageRate = PRICING_CONFIG.garage.pricePerSqft[garageFinish] || 0;
+  const garageRate = cfg.garage.pricePerSqft[garageFinish] || 0;
   const garageAmount = garageSqft * garageRate;
+  const deckSqft = getDeckSqft(); const deckAmount = deckSqft * cfg.decks.pricePerSqft;
+
+  // ── Flat adders ──
   const kitchen = getRadioValue('kitchen'); const kitchenAmount = flats.kitchen[kitchen] || 0;
   const bathrooms = getRadioValue('bathrooms'); const bathroomsAmount = flats.bathrooms[bathrooms] || 0;
-  const deckSqft = getDeckSqft(); const deckAmount = deckSqft * PRICING_CONFIG.decks.pricePerSqft;
+  const heating = getRadioValue('heating'); const heatingAmount = flats.heating[heating] || 0;
 
-  const midpoint = livingAmount + footprintAmount + basementFinishAmount + garageAmount + kitchenAmount + bathroomsAmount + deckAmount;
-  const { margin, roundTo } = PRICING_CONFIG.estimateRange;
+  const midpoint = livingAmount + footprintAmount + basementFinishAmount + garageAmount + deckAmount + kitchenAmount + bathroomsAmount + heatingAmount;
+  const { margin, roundTo } = cfg.estimateRange;
   const low = Math.floor((midpoint * (1 - margin)) / roundTo) * roundTo;
   const high = Math.ceil((midpoint * (1 + margin)) / roundTo) * roundTo;
 
-  breakdown.push(['Finishes', formatModifier(living.finishes[finishes])]);
-  breakdown.push(['Ceiling height', formatModifier(chMod)]);
-  breakdown.push(['Insulation', formatModifier(living.insulation[insulation])]);
-  breakdown.push(['Window & door package', formatModifier(living.windowDoorPackage[wdp])]);
-  breakdown.push(['Exterior siding', formatModifier(sidingMod)]);
-  breakdown.push(['Heating', formatModifier(living.heating[heating])]);
-  breakdown.push(['Roof design', `${formatModifier(foot.roofDesign[roofDesign])} of footprint`]);
-  breakdown.push(['Foundation', `${formatModifier(foot.foundation[foundation])} of footprint`]);
-  if (basementFinished) breakdown.push(['Finished basement', `${formatArea(footprint)} × $${PRICING_CONFIG.basementFinish.pricePerFootprintSqft} = ${formatCurrency(basementFinishAmount)}`]);
+  // ── Breakdown display ──
+  breakdown.push(['Base build', `$${cfg.basePricePerSqft}/sqft`]);
+  breakdown.push(['Size adjustment', `×${sizeMult.toFixed(3)}`]);
+  if (storeyMult !== 1) breakdown.push(['Multi-storey efficiency', `×${storeyMult.toFixed(2)}`]);
+  breakdown.push(['Finish grade', `×${finishMult.toFixed(2)}`]);
+  breakdown.push(['Living cost', `~$${livingRate.toFixed(0)}/sqft × ${formatArea(livingSqft)} = ${formatCurrency(livingAmount)}`]);
+  if (chMod) breakdown.push(['Ceiling height', `${formatModifier(chMod)} living`]);
+  if (wdpMod) breakdown.push(['Window & door package', `${formatModifier(wdpMod)} living`]);
+  if (insMod) breakdown.push(['Insulation', `${formatModifier(insMod)} living`]);
+  if (sidingMod) breakdown.push(['Exterior siding', `${formatModifier(sidingMod)} living`]);
+  breakdown.push(['Roof design', roofRate ? `${formatModifier(roofRate)} footprint = ${formatCurrency(roofRate * footprint)}` : 'included']);
+  breakdown.push(['Foundation', foundRate ? `${formatModifier(foundRate)} footprint = ${formatCurrency(foundRate * footprint)}` : 'full basement (included)']);
+  if (basementFinished) breakdown.push(['Finished basement', `${formatArea(footprint)} × $${cfg.basementFinish.pricePerFootprintSqft} = ${formatCurrency(basementFinishAmount)}`]);
   breakdown.push(['Garage', garageSqft > 0 ? `${formatArea(garageSqft)} × $${garageRate} (${garageFinish}) = ${formatCurrency(garageAmount)}` : '$0']);
+  breakdown.push(['Decks', deckSqft > 0 ? `${formatArea(deckSqft)} × $${cfg.decks.pricePerSqft} = ${formatCurrency(deckAmount)}` : '$0']);
   breakdown.push(['Kitchen', formatCurrency(kitchenAmount)]);
   breakdown.push(['Bathrooms', formatCurrency(bathroomsAmount)]);
-  breakdown.push(['Decks', deckSqft > 0 ? `${formatArea(deckSqft)} × $${PRICING_CONFIG.decks.pricePerSqft} = ${formatCurrency(deckAmount)}` : '$0']);
+  breakdown.push(['Heating upgrade', formatCurrency(heatingAmount)]);
 
   return { midpoint, low, high, livingRate, livingSqft, footprint, levels, garageSqft, garageRate, garageFinish, deckSqft, breakdown };
 }

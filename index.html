@@ -190,17 +190,42 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
 .recipe-line { color: #fff; font-weight: 700; font-size: 1.05rem; font-family: var(--head); }
 .recipe-sub { color: var(--on-dark-muted); font-size: 0.88rem; margin-top: 3px; }
 
-/* ================= PAIN POINTS ================= */
-.pain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 8px; }
-.pain-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--red); border-radius: var(--radius); padding: 22px 24px; }
-.pain-card h4 { font-size: 1.05rem; color: var(--ink); margin: 0 0 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-.pain-card h4::before { content: ""; width: 8px; height: 8px; background: var(--red); border-radius: 2px; flex-shrink: 0; }
-.pain-card ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
-.pain-card li { font-size: 0.9rem; color: var(--text); line-height: 1.5; padding-left: 18px; position: relative; }
-.pain-card li::before { content: "×"; position: absolute; left: 0; top: -1px; color: var(--red); font-weight: 800; }
-.pain-bridge { margin: 28px auto 0; max-width: 720px; text-align: center; background: var(--red-tint); border: 1px solid color-mix(in srgb, var(--red) 25%, var(--border)); border-radius: var(--radius); padding: 22px 26px; }
-.pain-bridge p { margin: 0; font-family: var(--head); font-size: 1.1rem; font-weight: 500; color: var(--ink); line-height: 1.45; letter-spacing: -0.01em; }
-.pain-bridge b { color: var(--red); font-weight: 700; }
+/* ================= OLD WAY vs NEW WAY ================= */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; align-items: start; }
+@media (max-width: 760px) { .compare { grid-template-columns: 1fr; } }
+.compare-col { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.compare-col.new { border-color: color-mix(in srgb, var(--red) 38%, var(--border)); background: var(--red-tint); box-shadow: 0 10px 34px -18px color-mix(in srgb, var(--red) 55%, transparent); }
+.compare-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+.compare-col.new .compare-head { border-bottom-color: color-mix(in srgb, var(--red) 20%, var(--border)); }
+.compare-head h3 { font-family: var(--head); font-size: 1.08rem; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+.compare-col.old .compare-head h3 { color: var(--muted); }
+.compare-col.new .compare-head h3 { color: var(--red); }
+.compare-tag { font-size: 0.68rem; color: var(--muted); font-weight: 600; }
+.compare-badge { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.09em; color: #fff; background: var(--red); padding: 5px 10px; border-radius: 999px; white-space: nowrap; }
+.compare-row { display: flex; align-items: flex-start; gap: 13px; padding: 13px 18px; border-top: 1px solid var(--border); }
+.compare-row:first-of-type { border-top: none; }
+.compare-col.new .compare-row { border-top-color: color-mix(in srgb, var(--red) 15%, var(--border)); }
+.compare-ico { flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; }
+.compare-col.old .compare-ico { background: color-mix(in srgb, var(--muted) 15%, transparent); color: var(--muted); }
+.compare-col.new .compare-ico { background: color-mix(in srgb, var(--red) 13%, transparent); color: var(--red); }
+.compare-ico svg { width: 20px; height: 20px; transition: transform .3s ease; }
+.compare-row:hover .compare-ico svg { transform: scale(1.14); }
+.compare-col.new .compare-ico { animation: cpulse 3.2s ease-in-out infinite; }
+@keyframes cpulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 30%, transparent); } 55% { box-shadow: 0 0 0 6px transparent; } }
+@media (prefers-reduced-motion: reduce) { .compare-col.new .compare-ico { animation: none; } .compare-ico svg { transition: none; } }
+.compare-row .ct { font-size: 0.9rem; line-height: 1.42; color: var(--text); }
+.compare-row .ct b { display: block; color: var(--ink); font-weight: 700; font-size: 0.96rem; margin-bottom: 2px; }
+
+/* ================= STEP FLOW (final CTA) ================= */
+.steps2 { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: stretch; max-width: 640px; margin: 6px auto 28px; text-align: left; }
+@media (max-width: 620px) { .steps2 { grid-template-columns: 1fr; } .steps2 .step2-arrow { transform: rotate(90deg); justify-self: center; } }
+.step2 { background: rgba(255,255,255,0.055); border: 1px solid rgba(255,255,255,0.16); border-radius: 12px; padding: 16px 18px; }
+.step2.done { border-color: color-mix(in srgb, var(--red) 55%, transparent); }
+.step2-k { display: inline-flex; align-items: center; gap: 7px; font-family: var(--head); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.11em; color: var(--red); margin-bottom: 8px; }
+.step2-k .chk { width: 17px; height: 17px; border-radius: 50%; background: var(--red); color: #fff; display: grid; place-items: center; font-size: 0.68rem; }
+.step2 h4 { color: #fff; font-size: 1.02rem; font-weight: 700; margin: 0 0 3px; }
+.step2 p { color: var(--on-dark-muted); font-size: 0.85rem; margin: 0; }
+.step2-arrow { color: var(--red); align-self: center; font-size: 1.5rem; font-weight: 700; }
 
 /* ================= WHY INNOVA ================= */
 .why-points { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 12px; }
@@ -280,7 +305,7 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
 <header class="hero">
   <div class="wrap narrow">
     <h1>Know what your custom home will cost — <em>before</em> you spend a dollar building it.</h1>
-    <p class="hero-sub">Most home budgets blow up because the design and the real number were never lined up early. Get a realistic price guide in about a minute below — then see the exact six-phase process that keeps your build on budget and out of permit-office surprises.</p>
+    <p class="hero-sub">Most home budgets blow up because the design and the real number were never lined up early. Build a realistic price guide in about a minute below — from real local contractor pricing — then book a free consult to turn it into a plan.</p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="#calculator">Get my price guide</a>
       <a class="btn btn-ghost" href="https://innovadesignstudio.ca/#contact-form" target="_blank" rel="noopener">Book a free consult</a>
@@ -304,9 +329,9 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
 <section class="section" id="calculator">
   <div class="wrap">
     <div class="section-head">
-      <p class="eyebrow">The Calculator</p>
+      <p class="eyebrow">Step 1 · Your Budget Estimate</p>
       <h2>Build your home on screen. Watch the number update.</h2>
-      <p>Adjust the options to match your vision. Your price guide updates live — no email needed to see it. It's a starting point, not a quote.</p>
+      <p>Adjust the options to match your vision. Your price guide updates live — no email needed to see it. Built from real local contractor pricing; a starting point, not a quote.</p>
     </div>
 
     <div class="calc-layout">
@@ -549,124 +574,38 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
 <!-- ===================== PAIN POINTS ===================== -->
 <section class="section" style="padding-bottom:24px;">
   <div class="wrap">
-    <div class="section-head" style="max-width:720px;">
-      <p class="eyebrow">Where builds go sideways</p>
-      <h2>The price isn't the risk. What happens <em style="color:var(--red);font-style:normal;">after</em> you fall in love with a plan is.</h2>
-      <p>Your price guide is the easy part. Here's where custom home projects actually go over budget and off the rails — and why it almost always traces back to a decision made, or skipped, before construction ever starts.</p>
+    <div class="section-head" style="max-width:760px;">
+      <p class="eyebrow">Why this matters now</p>
+      <h2>What happens if you don't take action <em style="color:var(--red);font-style:normal;">now?</em></h2>
+      <p>Most custom home projects go sideways long before a shovel hits the ground — and it almost always traces back to a decision made, or skipped, at the very start. Here's the difference between how it's usually done and how we do it.</p>
     </div>
 
-    <div class="pain-grid">
-      <div class="pain-card">
-        <h4>The budget creep</h4>
-        <ul>
-          <li>The builder's quote comes back tens of thousands over the number in your head</li>
-          <li>"Allowances" you didn't fully understand quietly inflate the total</li>
-          <li>Change orders start stacking up the moment framing begins</li>
-        </ul>
+    <div class="compare">
+      <div class="compare-col old">
+        <div class="compare-head"><h3>The old way</h3><span class="compare-tag">how it usually goes</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="ct"><b>Budget creep</b>The builder's quote comes back tens of thousands over the number in your head.</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="ct"><b>Guesswork estimates</b>A different number from every contractor — nothing you can actually compare.</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span><span class="ct"><b>Decision fatigue</b>Hundreds of choices with no framework, so you freeze — or say yes to everything.</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span><span class="ct"><b>Timeline drift</b>The build runs months past the promised date — and every extra month costs you.</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></span><span class="ct"><b>Loads of permits</b>A pile of permits and bylaws to decode and chase down on your own.</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span><span class="ct"><b>A plan you're stuck with</b>A layout that fights the site — and it's expensive to change once it's approved.</span></div>
       </div>
-      <div class="pain-card">
-        <h4>The design regret</h4>
-        <ul>
-          <li>You approve a plan, then realize it doesn't live the way you pictured — once it's expensive to change</li>
-          <li>The layout fights the site, the sun, or the view</li>
-          <li>You're deep into drawings before anyone flags the problem</li>
-        </ul>
+      <div class="compare-col new">
+        <div class="compare-head"><h3>The Innova way</h3><span class="compare-badge">✓ Done with you</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="ct"><b>A realistic starting number</b>Start with a grounded ballpark from real local pricing — instead of a quote that blows up later.</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="ct"><b>One clear price guide</b>Built from what real local contractors actually charge to build here.</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></span><span class="ct"><b>Guided decisions</b>A clear framework, so every choice fits your vision and your budget.</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span><span class="ct"><b>Design that gets built</b>The design you approve is the design that gets built — no costly redesigns mid-project.</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></span><span class="ct"><b>Permits done for you</b>We handle your permits and municipal approvals — A to Z.</span></div>
+        <div class="compare-row"><span class="compare-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></span><span class="ct"><b>Designed to your budget</b>We design to your budget from day one — and keep it there.</span></div>
       </div>
-      <div class="pain-card">
-        <h4>The permit wall</h4>
-        <ul>
-          <li>Your submission gets kicked back, and the project stalls for weeks</li>
-          <li>A setback, height limit, or zoning rule surfaces after you've designed around it</li>
-          <li>You're decoding municipal bylaws you've never had to read before</li>
-        </ul>
-      </div>
-      <div class="pain-card">
-        <h4>The build surprises</h4>
-        <ul>
-          <li>Vague drawings mean every contractor quotes a different number — you can't compare</li>
-          <li>Details left off the plans become "extras" you never budgeted for</li>
-          <li>No one's accountable when the design and the build don't match</li>
-        </ul>
-      </div>
-      <div class="pain-card">
-        <h4>The timeline drift</h4>
-        <ul>
-          <li>The build runs months past the promised date — and every extra month costs you rent or interest</li>
-          <li>Trades sit idle waiting on each other because no one's coordinating the sequence</li>
-          <li>A single unanswered detail on the drawings stalls the whole site</li>
-        </ul>
-      </div>
-      <div class="pain-card">
-        <h4>The decision overload</h4>
-        <ul>
-          <li>Hundreds of choices with no framework, so you freeze — or say yes to everything and blow the budget</li>
-          <li>"While we're at it" add-ons quietly pile up</li>
-          <li>You're making structural and technical calls you're not equipped for, and hoping they're right</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="pain-bridge">
-      <p>See the pattern? Not one of these is a <em style="font-style:normal">building</em> problem — they're all <b>planning problems.</b> Cheap to prevent on paper. Brutal to fix once the concrete's poured.</p>
     </div>
   </div>
 </section>
 
-<!-- ===================== PATH TO BUILT ===================== -->
-<section class="section">
-  <div class="wrap narrow">
-    <div class="section-head">
-      <p class="eyebrow">The path forward</p>
-      <h2>From first sketch to final build.</h2>
-      <p>The number above is the easy part. This is the process that protects it — the same six phases, every project. <strong style="color:var(--ink)">The design you approve is the design that gets built.</strong></p>
-    </div>
+<!-- Path to Built section removed from the lead magnet (2026-08-26) — it lives on the website + sales call.
+     Keep the lead magnet focused: build the estimate → book the consult. -->
 
-    <div class="path">
-      <div class="path-head">
-        <p class="eyebrow">Your Path to Built</p>
-        <h3>Six phases. One studio. From your first conversation to your final walkthrough.</h3>
-        <p>We don't hand you drawings and disappear. We stay with your project from the first sketch all the way through the build.</p>
-      </div>
-      <div class="steps">
-        <div class="step">
-          <div class="step-top"><span class="step-id"><span class="step-num">01</span><span class="step-name">Initial Consultation</span></span><span class="step-tag">where it starts</span></div>
-          <div class="step-desc">Every project begins with a conversation — your vision, your functional needs, your style, your scope. You walk away with a clear proposal of exactly what we'd do and what comes next. <b>No guesswork about how this works.</b></div>
-        </div>
-        <div class="step feature">
-          <span class="step-flag">◆ The Innova difference</span>
-          <div class="step-top"><span class="step-id"><span class="step-num">02</span><span class="step-name">Bylaw &amp; Code Review</span></span><span class="step-tag">before you design</span></div>
-          <div class="step-desc">Before we design a thing, we pressure-test your site against the zoning, setbacks, height limits, and land-use rules. So you <b>never fall in love with a home you're not allowed to build</b> — and the design you approve is the design that gets built. This is why our clients don't get blindsided at the permit office.</div>
-        </div>
-        <div class="step">
-          <div class="step-top"><span class="step-id"><span class="step-num">03</span><span class="step-name">Design Phase</span></span><span class="step-tag">concepts → drawings</span></div>
-          <div class="step-desc">The creative and technical core of your project — where the home takes shape and becomes buildable:</div>
-          <ul class="deliverables">
-            <li>Preliminary concepts</li><li>Design refinement</li><li>Material &amp; feature planning</li><li>Full construction drawings</li><li>Coordination-ready documentation</li><li>Optional 3D renderings</li>
-          </ul>
-        </div>
-        <div class="step">
-          <div class="step-top"><span class="step-id"><span class="step-num">04</span><span class="step-name">Permitting Process</span></span><span class="step-tag">we submit it</span></div>
-          <div class="step-desc">We prepare and submit your drawings, coordinate with the municipal departments, and handle the review comments. <b>You don't chase paperwork or wait on hold with the permit office</b> — we run it for you.</div>
-        </div>
-        <div class="step">
-          <div class="step-top"><span class="step-id"><span class="step-num">05</span><span class="step-name">Construction Phase</span></span><span class="step-tag">we stay on it</span></div>
-          <div class="step-desc">Once the build begins, we stay involved — site visits, design clarifications, detail review, and problem-solving alongside your build team. <b>The drawings don't just get tossed over the fence.</b></div>
-        </div>
-        <div class="step">
-          <div class="step-top"><span class="step-id"><span class="step-num">06</span><span class="step-name">Contractor Coordination</span></span><span class="step-tag">through to done</span></div>
-          <div class="step-desc">We work alongside your contractors from start to finish — providing drawings, clarifications, and design input whenever the build needs it. One team, all the way to your final walkthrough.</div>
-        </div>
-      </div>
-      <div class="recipe">
-        <div>
-          <div class="recipe-line">Six phases, handled in order — with no surprises in between.</div>
-          <div class="recipe-sub">Start your project with confidence.</div>
-        </div>
-        <a class="btn btn-primary" href="https://innovadesignstudio.ca/#contact-form" target="_blank" rel="noopener">Book a free consult →</a>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- ===================== STATS / CREDIBILITY ===================== -->
 <section class="section stats-band">
@@ -727,10 +666,22 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
 <section class="section">
   <div class="wrap narrow">
     <div class="final">
-      <p class="eyebrow">Ready when you are</p>
-      <h2>Start your project with confidence.</h2>
-      <p>A short, no-pressure call to see if we're the right fit — and to talk through the price guide you just built.</p>
-      <a class="btn btn-primary" href="https://innovadesignstudio.ca/#contact-form" target="_blank" rel="noopener">Book a free consult →</a>
+      <p class="eyebrow">Your next step</p>
+      <h2>You've built your estimate. Here's step two.</h2>
+      <div class="steps2">
+        <div class="step2 done">
+          <span class="step2-k"><span class="chk">✓</span> Step 1</span>
+          <h4>Your free budget estimate</h4>
+          <p>Built from real local contractor pricing — done above.</p>
+        </div>
+        <span class="step2-arrow">→</span>
+        <div class="step2">
+          <span class="step2-k">Step 2</span>
+          <h4>Book your free consult</h4>
+          <p>A short, no-pressure call to turn your number into a real plan.</p>
+        </div>
+      </div>
+      <a class="btn btn-primary" href="https://innovadesignstudio.ca/#contact-form" target="_blank" rel="noopener">Book my free consult →</a>
     </div>
   </div>
 </section>

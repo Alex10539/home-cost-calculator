@@ -348,6 +348,16 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
         </section>
 
         <section class="field-group">
+          <label>Design Complexity</label>
+          <div class="option-row" data-field="complexity">
+            <label class="option"><input type="radio" name="complexity" value="simple" checked> Simple Box</label>
+            <label class="option"><input type="radio" name="complexity" value="moderate"> L-Shape</label>
+            <label class="option"><input type="radio" name="complexity" value="complex"> Complex / Custom</label>
+          </div>
+          <p class="field-hint">A simple rectangle is most efficient. More corners, wings, and rooflines add cost.</p>
+        </section>
+
+        <section class="field-group">
           <label>Kitchen</label>
           <div class="option-row" data-field="kitchen">
             <label class="option"><input type="radio" name="kitchen" value="standard" checked> Standard</label>
@@ -445,6 +455,9 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
             <label class="option"><input type="radio" name="bathrooms" value="1.5"> 1.5</label>
             <label class="option"><input type="radio" name="bathrooms" value="2"> 2 Full</label>
             <label class="option"><input type="radio" name="bathrooms" value="2.5"> 2.5</label>
+          </div>
+          <div class="option-row" data-field="ensuite" style="margin-top:8px;">
+            <label class="option"><input type="checkbox" name="ensuite"> Spa ensuite — soaker tub + custom glass shower</label>
           </div>
         </section>
 
@@ -793,50 +806,56 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
 // DISCOUNT (negative), not an add.
 // ─────────────────────────────────────────────────────────────────────────────
 const PRICING_CONFIG = {
-  basePricePerSqft: 325,                                   // [JOSH §1] good-standard build, incl. full unfinished basement
+  // ── BLENDED across contractors (median). Sources: Josh Lajoie Renovations Ltd. + CNJ Builders (Nic Jeffries). ──
+  //   [MED]  = average of both contractors' submitted numbers.
+  //   [CNJ]  = CNJ only (Josh's guide had no real number for this field).
+  //   [JOSH] = Josh only (CNJ left blank or bundles it — e.g. garage).
+  // As more contractors return the form, re-median and update. See PROJECT-STATUS.md for the working table.
+  basePricePerSqft: 330,                                   // [MED] Josh 325 / CNJ 335, both anchored at 1500 sqft
   levels: { "1": 1, "1.5": 1.5, "2": 2 },                  // used to derive footprint = living / levels
 
-  // Multiplier on the living rate by TOTAL finished area — small homes cost more
-  // per sqft (fixed costs spread over less area). Piecewise-linear between points. [JOSH §2]
+  // Multiplier on the living rate by TOTAL finished area — small homes cost more per sqft.
+  // [MED] Josh curve is steep (1.20→0.875), CNJ flat (1.12→0.97); this is between them.
   sizeMultiplier: [
-    [1000, 1.20], [1250, 1.08], [1500, 1.00],
-    [1750, 0.94], [2000, 0.90], [2250, 0.88], [2500, 0.875],
+    [1000, 1.16], [1250, 1.08], [1500, 1.00],
+    [1750, 0.96], [2000, 0.92], [2250, 0.905], [2500, 0.89],
   ],
 
-  // Storey efficiency on the living rate — stacking saves foundation/roof area. [JOSH §3]
-  storeyMultiplier: { "1": 1.00, "1.5": 0.95, "2": 0.90 },
+  // Storey efficiency on the living rate — stacking saves foundation/roof area.
+  storeyMultiplier: { "1": 1.00, "1.5": 0.95, "2": 0.90 },  // [JOSH] CNJ left blank — single data point, revisit
 
-  // Overall interior finish grade — multiplier on the living rate. [JOSH §7]
-  finishGrade: { low: 0.90, medium: 1.00, high: 1.20 },    // builder / standard / high-end
+  // Overall interior finish grade — multiplier on the living rate.
+  finishGrade: { low: 0.95, medium: 1.00, high: 1.17 },    // [MED] builder Δ (Josh −32.5/CNJ 0), high-end Δ (Josh +65/CNJ +50)
 
   // Additive $ per sqft of finished LIVING area:
   perLivingSqftModifiers: {
-    ceilingHeight: { baseFeet: 8, perFootOver: 5 },        // [JOSH §14] 10ft = +$10/sqft over the 8ft baseline
-    windowDoorPackage: { package7: 0, package8: 20 },      // [JOSH §8] premium/upgraded window pkg +$20/sqft
-    insulation: { regularBatt: 0, sprayFoam: 6, battPlusRigid: 3 },   // [EST] guide folds insulation into baseline
-    cladding: { vinyl: 0, metal: 7, fiberCement: 9, boardAndBatten: 6, stoneAccenting: 11, brickStone: 14 }, // [EST] guide silent; vinyl = baseline
+    ceilingHeight: { baseFeet: 8, perFootOver: 15 },       // [MED] 10ft add: Josh +10 / CNJ +50 → +30 total = $15/ft
+    windowDoorPackage: { package7: 0, package8: 12 },      // [MED] 8' pkg: Josh ~20 / CNJ 5
+    insulation: { regularBatt: 0, sprayFoam: 5, battPlusRigid: 1 },   // [CNJ] real answers (Josh had none)
+    cladding: { vinyl: 0, metal: 15, fiberCement: 25, boardAndBatten: 15, stoneAccenting: 8, brickStone: 15 }, // [CNJ] real (Josh silent); stone nudged off CNJ's bundled $0
+    heating: { baseboard: 0, minisplitBaseboard: 0, forcedAir: 15, geothermal: 25 },   // [MED] PER SQFT — HVAC scales with size; Josh flat ÷ ~1750 ≈ CNJ's per-sqft
+    complexity: { simple: 0, moderate: 20, complex: 40 },  // extra $/living sqft. Median (Josh ~16/33, CNJ +50/100) dialed back toward Josh — CNJ's is an outlier; revisit with contractor #3
   },
 
   // Additive $ per sqft of FOOTPRINT (footprint = living / levels):
   perFootprintModifiers: {
-    roofDesign: { shed: 0, gable: 0, hip: 25, multiple: 50 },   // [JOSH §6] baseline low-pitch gable = $0; hip 20-30, complex 40-60
-    // [JOSH §4] baseline = full unfinished basement ($0). Slab/crawl are DISCOUNTS.
-    foundation: { fullBasement8: 0, fullBasement9: 8, crawlSpace: -30, slab5ftFrostWall: -40, slabThickenedFooting: -45 },
-    // ^ fullBasement8 [JOSH]; slabThickenedFooting ≈ insulated slab-on-grade -45 [JOSH]; 9', crawl, 5ft frost wall [EST]
+    roofDesign: { shed: 0, gable: 0, hip: 15, multiple: 33 },   // [MED] hip (Josh 25/CNJ 5), multiple (Josh 50/CNJ 15); gable baseline $0
+    // [MED] baseline = full unfinished basement ($0). Josh treats slab as a big discount; CNJ ~neutral.
+    foundation: { fullBasement8: 0, fullBasement9: 14, crawlSpace: -15, slab5ftFrostWall: -20, slabThickenedFooting: -22 },
   },
 
-  basementFinish: { pricePerFootprintSqft: 100 },          // [JOSH §17] finish the basement shell: +$100/sqft
+  basementFinish: { pricePerFootprintSqft: 100 },          // [MED] both said $100/sqft
 
   garage: {
-    pricePerSqft: { unfinished: 150, finished: 185 },      // [JOSH §16] standard attached $150; finished/heated $185 [EST, = living-above rate]
+    pricePerSqft: { unfinished: 150, finished: 185 },      // [JOSH] CNJ bundles a heated garage into base (gave $0) — not a usable marginal cost
     presets: { oneCar: { width: 16, depth: 24 }, twoCar: { width: 24, depth: 24 }, threeCar: { width: 36, depth: 24 } },
   },
-  decks: { pricePerSqft: 65 },                             // [JOSH §15] basic PT deck + typical railings/stairs
+  decks: { pricePerSqft: 88 },                             // [MED] Josh 65 (PT) / CNJ 110 (upgraded)
 
   flatAdders: {
-    kitchen: { standard: 0, premium: 12500, luxury: 25000 },        // [JOSH §9] $25k allowance; upgraded 1.5x (+$12.5k), high-end 2.0x (+$25k)
-    bathrooms: { "1": 0, "1.5": 12000, "2": 30000, "2.5": 42000 },  // [JOSH §11] +$30k per added full bath; half bath ≈ +$12k [EST]
-    heating: { minisplitBaseboard: 0, baseboard: 0, forcedAir: 25000, geothermal: 45000 }, // [JOSH §12] baseline baseboard+minisplit; forced-air +$25k; geothermal [EST]
+    kitchen: { standard: 0, premium: 11000, luxury: 27500 },        // [MED] premium Δ (Josh +12.5k/CNJ +10k), luxury Δ (both +25k/+30k)
+    bathrooms: { "1": 0, "1.5": 15000, "2": 27500, "2.5": 42500 },  // [MED] full bath (Josh 30k/CNJ 25k); half bath [CNJ] 15k
+    ensuite: 11000,   // [MED] spa ensuite (separate soaker tub + custom tiled glass shower): Josh +15k / CNJ +7.5k
   },
 
   estimateRange: { margin: 0.10, roundTo: 1000 },          // ±10% guide range
@@ -946,7 +965,9 @@ function calculateEstimate() {
   const insulation = getRadioValue('insulation'); const insMod = living.insulation[insulation] || 0;
   const sidingSelected = getCheckedValues('cladding');
   const sidingMod = sidingSelected.reduce((sum, v) => sum + (living.cladding[v] || 0), 0);
-  const addPerSqft = chMod + wdpMod + insMod + sidingMod;
+  const heating = getRadioValue('heating'); const heatingMod = living.heating[heating] || 0;
+  const complexity = getRadioValue('complexity'); const complexityMod = living.complexity[complexity] || 0;
+  const addPerSqft = chMod + wdpMod + insMod + sidingMod + heatingMod + complexityMod;
 
   const livingRate = baseRate + addPerSqft;
   const livingAmount = livingRate * livingSqft;
@@ -969,9 +990,10 @@ function calculateEstimate() {
   // ── Flat adders ──
   const kitchen = getRadioValue('kitchen'); const kitchenAmount = flats.kitchen[kitchen] || 0;
   const bathrooms = getRadioValue('bathrooms'); const bathroomsAmount = flats.bathrooms[bathrooms] || 0;
-  const heating = getRadioValue('heating'); const heatingAmount = flats.heating[heating] || 0;
+  const ensuiteOn = !!form.querySelector('input[name="ensuite"]:checked');
+  const ensuiteAmount = ensuiteOn ? flats.ensuite : 0;
 
-  const midpoint = livingAmount + footprintAmount + basementFinishAmount + garageAmount + deckAmount + kitchenAmount + bathroomsAmount + heatingAmount;
+  const midpoint = livingAmount + footprintAmount + basementFinishAmount + garageAmount + deckAmount + kitchenAmount + bathroomsAmount + ensuiteAmount;
   const { margin, roundTo } = cfg.estimateRange;
   const low = Math.floor((midpoint * (1 - margin)) / roundTo) * roundTo;
   const high = Math.ceil((midpoint * (1 + margin)) / roundTo) * roundTo;
@@ -982,10 +1004,12 @@ function calculateEstimate() {
   if (storeyMult !== 1) breakdown.push(['Multi-storey efficiency', `×${storeyMult.toFixed(2)}`]);
   breakdown.push(['Finish grade', `×${finishMult.toFixed(2)}`]);
   breakdown.push(['Living cost', `~$${livingRate.toFixed(0)}/sqft × ${formatArea(livingSqft)} = ${formatCurrency(livingAmount)}`]);
+  if (complexityMod) breakdown.push(['Design complexity', `${formatModifier(complexityMod)} living`]);
   if (chMod) breakdown.push(['Ceiling height', `${formatModifier(chMod)} living`]);
   if (wdpMod) breakdown.push(['Window & door package', `${formatModifier(wdpMod)} living`]);
   if (insMod) breakdown.push(['Insulation', `${formatModifier(insMod)} living`]);
   if (sidingMod) breakdown.push(['Exterior siding', `${formatModifier(sidingMod)} living`]);
+  if (heatingMod) breakdown.push(['Heating', `${formatModifier(heatingMod)} living`]);
   breakdown.push(['Roof design', roofRate ? `${formatModifier(roofRate)} footprint = ${formatCurrency(roofRate * footprint)}` : 'included']);
   breakdown.push(['Foundation', foundRate ? `${formatModifier(foundRate)} footprint = ${formatCurrency(foundRate * footprint)}` : 'full basement (included)']);
   if (basementFinished) breakdown.push(['Finished basement', `${formatArea(footprint)} × $${cfg.basementFinish.pricePerFootprintSqft} = ${formatCurrency(basementFinishAmount)}`]);
@@ -993,7 +1017,7 @@ function calculateEstimate() {
   breakdown.push(['Decks', deckSqft > 0 ? `${formatArea(deckSqft)} × $${cfg.decks.pricePerSqft} = ${formatCurrency(deckAmount)}` : '$0']);
   breakdown.push(['Kitchen', formatCurrency(kitchenAmount)]);
   breakdown.push(['Bathrooms', formatCurrency(bathroomsAmount)]);
-  breakdown.push(['Heating upgrade', formatCurrency(heatingAmount)]);
+  if (ensuiteAmount) breakdown.push(['Spa ensuite', formatCurrency(ensuiteAmount)]);
 
   return { midpoint, low, high, livingRate, livingSqft, footprint, levels, garageSqft, garageRate, garageFinish, deckSqft, breakdown };
 }

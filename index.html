@@ -484,14 +484,13 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
         <section class="field-group">
           <label>Exterior Siding</label>
           <div class="option-row" data-field="cladding">
-            <label class="option"><input type="checkbox" name="cladding" value="vinyl" checked> Vinyl</label>
-            <label class="option"><input type="checkbox" name="cladding" value="metal"> Metal</label>
-            <label class="option"><input type="checkbox" name="cladding" value="fiberCement"> Fiber Cement</label>
-            <label class="option"><input type="checkbox" name="cladding" value="boardAndBatten"> Board &amp; Batten</label>
-            <label class="option"><input type="checkbox" name="cladding" value="stoneAccenting"> Stone Accenting</label>
-            <label class="option"><input type="checkbox" name="cladding" value="brickStone"> Brick / Stone</label>
+            <label class="option"><input type="radio" name="cladding" value="vinyl" checked> Vinyl</label>
+            <label class="option"><input type="radio" name="cladding" value="metal"> Metal</label>
+            <label class="option"><input type="radio" name="cladding" value="fiberCement"> Fiber Cement</label>
+            <label class="option"><input type="radio" name="cladding" value="boardAndBatten"> Board &amp; Batten</label>
+            <label class="option"><input type="radio" name="cladding" value="brickStone"> Brick / Stone</label>
           </div>
-          <p class="field-hint">Choose one, or combine a main siding with accents — e.g. vinyl with stone or brick accenting.</p>
+          <p class="field-hint">Your main exterior material. A bit of stone or brick accent trim is already included.</p>
         </section>
 
         <section class="field-group">
@@ -557,6 +556,7 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
           <div class="disclaimer">
             <p><strong>What's included:</strong> building construction only — the structure and the options you select.</p>
             <p><strong>Not included:</strong> land, site prep &amp; excavation, well &amp; septic or municipal servicing, driveway &amp; landscaping, permits &amp; development fees, design fees, appliances, and HST.</p>
+            <p><strong>The range shown is a ±10% guide range</strong> (how much a real quote might vary). On top of that, builders typically recommend keeping a <strong>~10% contingency</strong> as a separate planning reserve.</p>
             <p>This is a rough price guide based on general industry numbers — not a quote. Your real cost also depends on what contractors quote, how they price the work, and what they can source materials for. Treat it as a starting point for planning.</p>
           </div>
         </div>
@@ -795,8 +795,9 @@ const PRICING_CONFIG = {
     [1750, 0.96], [2000, 0.92], [2250, 0.905], [2500, 0.89],
   ],
 
-  // Storey efficiency on the living rate — stacking saves foundation/roof area.
-  storeyMultiplier: { "1": 1.00, "1.5": 0.95, "2": 0.90 },  // [JOSH] CNJ left blank — single data point, revisit
+  // Storey efficiency on the living rate — stacking a 2nd floor shares one foundation/roof.
+  // storeyMult = 1 − storeyEfficiency × (2nd floor ÷ main floor). Full 2-storey → 0.90×, bungalow → 1.00×.
+  storeyEfficiency: 0.10,  // [JOSH only] CNJ didn't answer — PROVISIONAL, single data point, revisit with contractor #3
 
   // Overall interior finish grade — multiplier on the living rate.
   finishGrade: { low: 0.95, medium: 1.00, high: 1.17 },    // [MED] builder Δ (Josh −32.5/CNJ 0), high-end Δ (Josh +65/CNJ +50)
@@ -808,7 +809,7 @@ const PRICING_CONFIG = {
     insulation: { regularBatt: 0, sprayFoam: 5, battPlusRigid: 1 },   // [CNJ] real answers (Josh had none)
     cladding: { vinyl: 0, metal: 15, fiberCement: 25, boardAndBatten: 15, stoneAccenting: 8, brickStone: 15 }, // [CNJ] real (Josh silent); stone nudged off CNJ's bundled $0
     heating: { baseboard: 0, minisplitBaseboard: 0, forcedAir: 15, geothermal: 25 },   // [MED] PER SQFT — HVAC scales with size; Josh flat ÷ ~1750 ≈ CNJ's per-sqft
-    complexity: { simple: 0, moderate: 20, complex: 40 },  // extra $/living sqft. Median (Josh ~16/33, CNJ +50/100) dialed back toward Josh — CNJ's is an outlier; revisit with contractor #3
+    complexity: { simple: 0, moderate: 20, complex: 40 },  // extra $/living sqft. Josh implies ~+16/+33, CNJ gave +50/+100 → true 2-way midpoint ≈ +33/+66. Set to +20/40 (Alexander's call, conservative). Only 2 quotes, wide spread — a judgment call, NOT a verified median. Revisit with #3. Watch double-count vs roof/finish.
   },
 
   // Additive $ per sqft of FOOTPRINT (footprint = living / levels):
@@ -821,7 +822,7 @@ const PRICING_CONFIG = {
   basementFinish: { pricePerFootprintSqft: 100 },          // [MED] both said $100/sqft
 
   garage: {
-    pricePerSqft: { unfinished: 150, finished: 185 },      // [JOSH] CNJ bundles a heated garage into base (gave $0) — not a usable marginal cost
+    pricePerSqft: { unfinished: 150, finished: 185 },      // unfinished $150 [JOSH "standard attached"]. finished/heated $185 is UNCONFIRMED — Josh's $185 was for a garage SUPPORTING LIVING SPACE ABOVE, not a heated garage; CNJ bundles his into base ($0). Base $330 is PROVISIONAL re: garage double-count. CONFIRM a real heated-garage rate + CNJ's no-garage base.
     presets: { oneCar: { width: 16, depth: 24 }, twoCar: { width: 24, depth: 24 }, threeCar: { width: 36, depth: 24 } },
   },
   decks: { pricePerSqft: 88 },                             // [MED] Josh 65 (PT) / CNJ 110 (upgraded)
@@ -946,7 +947,7 @@ function calculateEstimate() {
   // ── Living cost: base × size × storey × finish grade, then additive $/sqft ──
   // Storey efficiency is proportional to the second floor (Josh's guide): full 2-storey = 0.90, bungalow = 1.00.
   const sizeMult = sizeMultiplier(livingSqft);
-  const storeyMult = 1 - 0.10 * ratio;
+  const storeyMult = 1 - cfg.storeyEfficiency * ratio;
   const finishMult = cfg.finishGrade[getRadioValue('finishes')] || 1;
   const baseRate = cfg.basePricePerSqft * sizeMult * storeyMult * finishMult;
 
@@ -955,8 +956,7 @@ function calculateEstimate() {
   const chMod = Math.max(0, chFeet - living.ceilingHeight.baseFeet) * living.ceilingHeight.perFootOver;
   const wdp = getRadioValue('windowDoorPackage'); const wdpMod = living.windowDoorPackage[wdp] || 0;
   const insulation = getRadioValue('insulation'); const insMod = living.insulation[insulation] || 0;
-  const sidingSelected = getCheckedValues('cladding');
-  const sidingMod = sidingSelected.reduce((sum, v) => sum + (living.cladding[v] || 0), 0);
+  const siding = getRadioValue('cladding'); const sidingMod = living.cladding[siding] || 0;
   const heating = getRadioValue('heating'); const heatingMod = living.heating[heating] || 0;
   const complexity = getRadioValue('complexity'); const complexityMod = living.complexity[complexity] || 0;
   const addPerSqft = chMod + wdpMod + insMod + sidingMod + heatingMod + complexityMod;

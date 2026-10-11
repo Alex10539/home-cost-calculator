@@ -1367,6 +1367,9 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 });
 
 // ---- Lead capture ----
+// Innova client portal: also drop each lead into the team's Submissions inbox (name, email, range, answers).
+// Leave PORTAL_URL empty to switch this off. A failure here never affects the visitor.
+const PORTAL_URL = 'https://portal.innovadesignstudio.ca';
 function notifyLead(name, email, c) {
   const fd = new FormData();
   fd.append('_subject', `New Home Cost Calculator lead: ${name}`);
@@ -1390,6 +1393,22 @@ function notifyLead(name, email, c) {
       method: 'POST', headers: { Accept: 'application/json' }, body: fd,
     }).catch((e) => console.error('Lead notify failed:', e));
   } catch (e) { console.error('Lead notify failed:', e); }
+  try {
+    if (PORTAL_URL) {
+      fetch(PORTAL_URL + '/api/submissions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+        body: JSON.stringify({
+          source: 'calculator', name, email,
+          range: c ? `${formatCurrency(c.low)} – ${formatCurrency(c.high)}` : '',
+          data: {
+            livingSqft: c ? c.livingSqft : '', mainFloorSqft: c ? c.floor1 : '', secondFloorSqft: c ? c.floor2 : '',
+            levels: getRadioValue('levels'), bedrooms: getRadioValue('bedrooms'), foundation: getRadioValue('foundation'),
+            garageSqft: c ? c.garageSqft : '', finishes: getRadioValue('finishes'), kitchen: getRadioValue('kitchen'),
+          },
+        }),
+      }).catch(() => {});
+    }
+  } catch (e) { /* the portal must never break the calculator */ }
 }
 
 document.getElementById('lead-form').addEventListener('submit', (e) => {

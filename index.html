@@ -130,6 +130,32 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
 .floor-total-line { margin: 12px 0 0; font-size: 0.95rem; color: var(--ink); font-weight: 600; }
 .floor-total-line span { color: var(--red); font-weight: 800; font-family: var(--head); }
 .level-auto-note { margin: 10px 0 0; font-size: 0.82rem; font-weight: 700; color: var(--red); line-height: 1.5; }
+.warn-note { margin: 10px 0 0; font-size: 0.84rem; font-weight: 600; color: #8a4b0f; background: #fdf4e7; border: 1px solid #f0d9b8; border-radius: 8px; padding: 10px 13px; line-height: 1.5; }
+.warn-note b { color: #6b3a0b; }
+.help-toggle { margin-left: 9px; font-family: var(--body); font-size: 0.72rem; font-weight: 700; color: var(--red); background: none; border: none; cursor: pointer; text-transform: none; letter-spacing: 0; padding: 0; vertical-align: middle; }
+.help-toggle:hover { text-decoration: underline; }
+.help-panel { margin: 12px 0 0; padding: 13px 16px; background: var(--band); border: 1px solid var(--border); border-left: 3px solid var(--red); border-radius: 8px; font-size: 0.85rem; line-height: 1.55; color: var(--text); }
+.help-panel p { margin: 0 0 8px; }
+.help-panel p:last-child { margin-bottom: 0; }
+.help-panel b { color: var(--ink); }
+.help-panel .tip { color: var(--red); font-weight: 600; }
+/* Visual selectable cards (roof, foundation) */
+.visual-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 11px; margin-top: 4px; }
+.visual-card { position: relative; border: 1px solid var(--border); border-radius: 12px; padding: 10px 8px; background: var(--surface); cursor: pointer; text-align: center; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.visual-card:hover { border-color: color-mix(in srgb, var(--red) 40%, var(--border)); transform: translateY(-2px); }
+.visual-card input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.visual-card svg { width: 100%; height: 60px; display: block; }
+.visual-card .vc-name { margin-top: 7px; font-size: 0.8rem; font-weight: 700; color: var(--ink); font-family: var(--head); line-height: 1.2; }
+.visual-card:has(input:checked) { border-color: var(--red); box-shadow: 0 0 0 2px var(--red); background: var(--red-tint); }
+.visual-card:has(input:checked) .vc-name { color: var(--red); }
+.visual-card.is-selected { border-color: var(--red); box-shadow: 0 0 0 2px var(--red); background: var(--red-tint); }
+.visual-card.is-selected .vc-name { color: var(--red); }
+.visual-card:has(input:focus-visible) { outline: 2px solid var(--red); outline-offset: 2px; }
+.vc-house { animation: vcBob 3.6s ease-in-out infinite; }
+.vc-sun { transform-box: fill-box; transform-origin: center; animation: vcSun 3s ease-in-out infinite; }
+@keyframes vcBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+@keyframes vcSun { 0%, 100% { opacity: .5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .vc-house, .vc-sun { animation: none; } }
 .conditional-block { margin-top: 16px; padding-left: 14px; border-left: 2px solid var(--border); }
 .sub-label { display: block; font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 9px; font-family: var(--head); }
 .form-actions { margin-top: 10px; display: flex; gap: 12px; align-items: center; }
@@ -373,33 +399,117 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
         </section>
 
         <section class="field-group">
-          <label>Roof Design</label>
-          <div class="option-row" data-field="roofDesign">
-            <label class="option"><input type="radio" name="roofDesign" value="shed" checked> Shed</label>
-            <label class="option"><input type="radio" name="roofDesign" value="gable"> Gable</label>
-            <label class="option"><input type="radio" name="roofDesign" value="hip"> Hip</label>
-            <label class="option"><input type="radio" name="roofDesign" value="multiple"> Multiple Styles</label>
+          <label>Bedrooms</label>
+          <div class="option-row" data-field="bedrooms">
+            <label class="option"><input type="radio" name="bedrooms" value="1"> 1</label>
+            <label class="option"><input type="radio" name="bedrooms" value="2"> 2</label>
+            <label class="option"><input type="radio" name="bedrooms" value="3" checked> 3</label>
+            <label class="option"><input type="radio" name="bedrooms" value="4"> 4</label>
+            <label class="option"><input type="radio" name="bedrooms" value="5"> 5</label>
+            <label class="option"><input type="radio" name="bedrooms" value="6"> 6+</label>
+          </div>
+          <p class="warn-note" id="bedroomNote" style="display:none;"></p>
+          <p class="field-hint">How many bedrooms you're planning. This doesn't change the price much on its own — it mostly helps make sure your layout actually fits the square footage you chose.</p>
+        </section>
+
+        <section class="field-group">
+          <label>Roof Design <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
+          <div class="visual-grid" data-field="roofDesign" role="radiogroup" aria-label="Roof design">
+            <label class="visual-card">
+              <input type="radio" name="roofDesign" value="shed" checked>
+              <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle class="vc-sun" cx="85" cy="13" r="6" fill="#e8a13a"/>
+                <line x1="16" y1="62" x2="84" y2="62" stroke="#d9d3c9" stroke-width="2"/>
+                <g class="vc-house">
+                  <rect x="28" y="40" width="44" height="22" fill="#efe9e2" stroke="#d9d3c9" stroke-width="1.5"/>
+                  <rect x="34" y="46" width="9" height="7" fill="#cfe0ea"/>
+                  <rect x="47" y="50" width="8" height="12" fill="#9a8f80"/>
+                  <polygon points="24,40 76,40 76,33 24,25" fill="#C2362F"/>
+                </g>
+              </svg>
+              <span class="vc-name">Shed</span>
+            </label>
+            <label class="visual-card">
+              <input type="radio" name="roofDesign" value="gable">
+              <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle class="vc-sun" cx="85" cy="13" r="6" fill="#e8a13a"/>
+                <line x1="16" y1="62" x2="84" y2="62" stroke="#d9d3c9" stroke-width="2"/>
+                <g class="vc-house">
+                  <rect x="28" y="40" width="44" height="22" fill="#efe9e2" stroke="#d9d3c9" stroke-width="1.5"/>
+                  <rect x="34" y="46" width="9" height="7" fill="#cfe0ea"/>
+                  <rect x="47" y="50" width="8" height="12" fill="#9a8f80"/>
+                  <polygon points="24,40 76,40 50,23" fill="#C2362F"/>
+                </g>
+              </svg>
+              <span class="vc-name">Gable</span>
+            </label>
+            <label class="visual-card">
+              <input type="radio" name="roofDesign" value="hip">
+              <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle class="vc-sun" cx="85" cy="13" r="6" fill="#e8a13a"/>
+                <line x1="16" y1="62" x2="84" y2="62" stroke="#d9d3c9" stroke-width="2"/>
+                <g class="vc-house">
+                  <rect x="28" y="40" width="44" height="22" fill="#efe9e2" stroke="#d9d3c9" stroke-width="1.5"/>
+                  <rect x="34" y="46" width="9" height="7" fill="#cfe0ea"/>
+                  <rect x="47" y="50" width="8" height="12" fill="#9a8f80"/>
+                  <polygon points="24,40 76,40 63,25 37,25" fill="#C2362F"/>
+                </g>
+              </svg>
+              <span class="vc-name">Hip</span>
+            </label>
+            <label class="visual-card">
+              <input type="radio" name="roofDesign" value="multiple">
+              <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle class="vc-sun" cx="85" cy="13" r="6" fill="#e8a13a"/>
+                <line x1="16" y1="62" x2="84" y2="62" stroke="#d9d3c9" stroke-width="2"/>
+                <g class="vc-house">
+                  <rect x="28" y="40" width="44" height="22" fill="#efe9e2" stroke="#d9d3c9" stroke-width="1.5"/>
+                  <rect x="34" y="46" width="9" height="7" fill="#cfe0ea"/>
+                  <rect x="47" y="50" width="8" height="12" fill="#9a8f80"/>
+                  <polygon points="22,40 58,40 40,24" fill="#C2362F"/>
+                  <polygon points="50,40 78,40 64,28" fill="#a02a24"/>
+                </g>
+              </svg>
+              <span class="vc-name">Multiple</span>
+            </label>
+          </div>
+          <div class="help-panel" style="display:none;">
+            <p><b>Shed</b> — one single sloped roof, like a lean-to. The simplest and usually cheapest; gives a clean modern look.</p>
+            <p><b>Gable</b> — the classic triangle roof: two slopes meeting at a peak. Common and affordable, and sheds snow and rain well.</p>
+            <p><b>Hip</b> — slopes down on all four sides. More stable in wind and a more finished look, but costs more (extra framing and materials).</p>
+            <p><b>Multiple Styles</b> — a mix of roof shapes (gables, dormers, sections at different heights). The most custom look, and the most expensive to frame.</p>
           </div>
         </section>
 
         <section class="field-group">
-          <label>Interior Finishes</label>
+          <label>Interior Finishes <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
           <div class="option-row" data-field="finishes">
             <label class="option"><input type="radio" name="finishes" value="low"> Low</label>
             <label class="option"><input type="radio" name="finishes" value="medium" checked> Medium</label>
             <label class="option"><input type="radio" name="finishes" value="high"> High</label>
           </div>
           <p class="field-hint">Overall level for flooring, trim, doors, and paint. Kitchen and bathrooms are set separately below.</p>
+          <div class="help-panel" style="display:none;">
+            <p><b>Low (builder-grade)</b> — functional, budget-friendly materials: basic flooring, standard trim and doors, simple fixtures.</p>
+            <p><b>Medium (standard)</b> — a solid middle ground: nicer flooring, better trim, good-quality fixtures. What most new homes use.</p>
+            <p><b>High (premium)</b> — upgraded throughout: hardwood, custom trim and millwork, higher-end fixtures and finishes.</p>
+          </div>
         </section>
 
         <section class="field-group">
-          <label>Design Complexity</label>
+          <label>Design Complexity <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
           <div class="option-row" data-field="complexity">
             <label class="option"><input type="radio" name="complexity" value="simple" checked> Simple Box</label>
             <label class="option"><input type="radio" name="complexity" value="moderate"> L-Shape</label>
             <label class="option"><input type="radio" name="complexity" value="complex"> Complex / Custom</label>
           </div>
           <p class="field-hint">A simple rectangle is most efficient. More corners, wings, and rooflines add cost.</p>
+          <div class="help-panel" style="display:none;">
+            <p>This is the <b>shape of your home's footprint</b> — the outline if you looked straight down.</p>
+            <p><b>Simple Box</b> — a straightforward rectangle or square. The most efficient and affordable to build.</p>
+            <p><b>L-Shape</b> — some wings, corners, or bump-outs. A bit more framing, roofline, and cost.</p>
+            <p><b>Complex / Custom</b> — lots of corners, angles, and rooflines. Striking, but the most expensive to frame and finish.</p>
+          </div>
         </section>
 
         <section class="field-group">
@@ -412,7 +522,7 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
         </section>
 
         <section class="field-group">
-          <label>Ceiling Height</label>
+          <label>Ceiling Height <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
           <div class="option-row" data-field="ceilingHeight">
             <label class="option"><input type="radio" name="ceilingHeight" value="8" checked> 8'</label>
             <label class="option"><input type="radio" name="ceilingHeight" value="9"> 9'</label>
@@ -420,10 +530,17 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
             <label class="option"><input type="radio" name="ceilingHeight" value="other"> Other</label>
           </div>
           <input type="number" id="ceilingHeightOther" class="conditional-input" min="8" step="0.5" inputmode="decimal" aria-label="Custom ceiling height in feet" placeholder="Enter height in feet" style="display:none;">
+          <div class="help-panel" style="display:none;">
+            <p>How tall the ceilings are on your main living floor.</p>
+            <p><b>8'</b> — the standard height, included in the base price.</p>
+            <p><b>9'</b> — a foot taller; feels noticeably more open and airy. Adds some cost (taller walls, more material).</p>
+            <p><b>10'</b> — a grand, open feel. More cost again.</p>
+            <p><b>Other</b> — enter a custom height (e.g. vaulted or cathedral ceilings). <span class="tip">Taller ceilings are one of the cheapest ways to make a home feel bigger and more high-end.</span></p>
+          </div>
         </section>
 
         <section class="field-group">
-          <label>Garage</label>
+          <label>Garage <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
           <div class="option-row" data-field="garage">
             <label class="option"><input type="radio" name="garage" value="none" checked> None</label>
             <label class="option"><input type="radio" name="garage" value="oneCar"> 1 Car</label>
@@ -443,16 +560,89 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
               <label class="option"><input type="radio" name="garageFinish" value="finished"> Finished / Heated</label>
             </div>
           </div>
+          <div class="help-panel" style="display:none;">
+            <p>An attached garage (shares a wall with the house). Pick how many cars it fits, then set the size.</p>
+            <p><b>Unfinished</b> — the basic garage: framed and closed in, but no drywall, insulation, or heat.</p>
+            <p><b>Finished / Heated</b> — insulated, drywalled, and heated, so it's comfortable year-round as a workspace or gym. Costs more.</p>
+          </div>
         </section>
 
         <section class="field-group">
-          <label>Foundation Type</label>
-          <div class="option-row" data-field="foundation">
-            <label class="option"><input type="radio" name="foundation" value="slabThickenedFooting"> Slab — Thickened Footing</label>
-            <label class="option"><input type="radio" name="foundation" value="slab5ftFrostWall"> Slab — 5' Frost Wall</label>
-            <label class="option"><input type="radio" name="foundation" value="crawlSpace"> Crawl Space</label>
-            <label class="option"><input type="radio" name="foundation" value="fullBasement8" checked> Full 8' Basement</label>
-            <label class="option"><input type="radio" name="foundation" value="fullBasement9"> Full 9' Basement</label>
+          <label>Foundation Type <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
+          <div class="visual-grid" data-field="foundation" role="radiogroup" aria-label="Foundation type">
+            <label class="visual-card">
+              <input type="radio" name="foundation" value="slabThickenedFooting">
+              <svg viewBox="0 0 100 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle class="vc-sun" cx="86" cy="12" r="5.5" fill="#e8a13a"/>
+                <rect x="6" y="42" width="88" height="30" fill="#ece4d7"/>
+                <line x1="6" y1="42" x2="94" y2="42" stroke="#cdbfa6" stroke-width="1.5"/>
+                <rect x="32" y="26" width="36" height="16" fill="#efe9e2" stroke="#d9d3c9" stroke-width="1.5"/>
+                <polygon points="30,26 70,26 50,15" fill="#C2362F"/>
+                <rect x="31" y="42" width="38" height="3" fill="#C2362F"/>
+                <rect x="31" y="45" width="5" height="5" fill="#C2362F"/>
+                <rect x="64" y="45" width="5" height="5" fill="#C2362F"/>
+              </svg>
+              <span class="vc-name">Slab</span>
+            </label>
+            <label class="visual-card">
+              <input type="radio" name="foundation" value="slab5ftFrostWall">
+              <svg viewBox="0 0 100 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle class="vc-sun" cx="86" cy="12" r="5.5" fill="#e8a13a"/>
+                <rect x="6" y="42" width="88" height="30" fill="#ece4d7"/>
+                <line x1="6" y1="42" x2="94" y2="42" stroke="#cdbfa6" stroke-width="1.5"/>
+                <rect x="32" y="26" width="36" height="16" fill="#efe9e2" stroke="#d9d3c9" stroke-width="1.5"/>
+                <polygon points="30,26 70,26 50,15" fill="#C2362F"/>
+                <rect x="31" y="42" width="38" height="3" fill="#C2362F"/>
+                <rect x="31" y="42" width="4" height="15" fill="#C2362F"/>
+                <rect x="65" y="42" width="4" height="15" fill="#C2362F"/>
+              </svg>
+              <span class="vc-name">Slab + Frost Wall</span>
+            </label>
+            <label class="visual-card">
+              <input type="radio" name="foundation" value="crawlSpace">
+              <svg viewBox="0 0 100 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle class="vc-sun" cx="86" cy="12" r="5.5" fill="#e8a13a"/>
+                <rect x="6" y="42" width="88" height="30" fill="#ece4d7"/>
+                <line x1="6" y1="42" x2="94" y2="42" stroke="#cdbfa6" stroke-width="1.5"/>
+                <rect x="32" y="26" width="36" height="16" fill="#efe9e2" stroke="#d9d3c9" stroke-width="1.5"/>
+                <polygon points="30,26 70,26 50,15" fill="#C2362F"/>
+                <rect x="35" y="43" width="30" height="9" fill="#fbfaf8"/>
+                <rect x="31" y="42" width="4" height="13" fill="#C2362F"/>
+                <rect x="65" y="42" width="4" height="13" fill="#C2362F"/>
+                <rect x="31" y="52" width="38" height="3" fill="#C2362F"/>
+              </svg>
+              <span class="vc-name">Crawl Space</span>
+            </label>
+            <label class="visual-card">
+              <input type="radio" name="foundation" value="fullBasement8" checked>
+              <svg viewBox="0 0 100 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle class="vc-sun" cx="86" cy="12" r="5.5" fill="#e8a13a"/>
+                <rect x="6" y="42" width="88" height="30" fill="#ece4d7"/>
+                <line x1="6" y1="42" x2="94" y2="42" stroke="#cdbfa6" stroke-width="1.5"/>
+                <rect x="32" y="26" width="36" height="16" fill="#efe9e2" stroke="#d9d3c9" stroke-width="1.5"/>
+                <polygon points="30,26 70,26 50,15" fill="#C2362F"/>
+                <rect x="35" y="43" width="30" height="20" fill="#fbfaf8"/>
+                <rect x="31" y="42" width="4" height="24" fill="#C2362F"/>
+                <rect x="65" y="42" width="4" height="24" fill="#C2362F"/>
+                <rect x="31" y="63" width="38" height="3" fill="#C2362F"/>
+              </svg>
+              <span class="vc-name">8&prime; Basement</span>
+            </label>
+            <label class="visual-card">
+              <input type="radio" name="foundation" value="fullBasement9">
+              <svg viewBox="0 0 100 72" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle class="vc-sun" cx="86" cy="12" r="5.5" fill="#e8a13a"/>
+                <rect x="6" y="42" width="88" height="30" fill="#ece4d7"/>
+                <line x1="6" y1="42" x2="94" y2="42" stroke="#cdbfa6" stroke-width="1.5"/>
+                <rect x="32" y="26" width="36" height="16" fill="#efe9e2" stroke="#d9d3c9" stroke-width="1.5"/>
+                <polygon points="30,26 70,26 50,15" fill="#C2362F"/>
+                <rect x="35" y="43" width="30" height="23" fill="#fbfaf8"/>
+                <rect x="31" y="42" width="4" height="27" fill="#C2362F"/>
+                <rect x="65" y="42" width="4" height="27" fill="#C2362F"/>
+                <rect x="31" y="66" width="38" height="3" fill="#C2362F"/>
+              </svg>
+              <span class="vc-name">9&prime; Basement</span>
+            </label>
           </div>
           <p class="field-hint">Your basement is sized automatically from your main floor — you don't enter its square footage.</p>
           <div class="conditional-block" id="basementFinishBlock" style="display:none;">
@@ -462,27 +652,46 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
               <label class="option"><input type="radio" name="basementFinish" value="finished"> Finished (living space)</label>
             </div>
           </div>
+          <div class="help-panel" style="display:none;">
+            <p>What sits under your home. It affects cost and how much usable space you get.</p>
+            <p><b>Slab — Thickened Footing</b> — the home sits on a concrete slab on the ground. No basement, lowest cost.</p>
+            <p><b>Slab — 5' Frost Wall</b> — a slab with a short wall going down below the frost line so it doesn't heave in winter. Still no basement.</p>
+            <p><b>Crawl Space</b> — a low space (a few feet) under the floor for easy access to plumbing and wiring — not usable living space.</p>
+            <p><b>Full 8' Basement</b> — a full-height basement under the home: huge bonus space you can finish later. <span class="tip">Already included in the base price (unfinished).</span></p>
+            <p><b>Full 9' Basement</b> — same, but a foot taller — feels much more open if you plan to finish it into living space.</p>
+          </div>
         </section>
 
         <section class="field-group">
-          <label>Insulation</label>
+          <label>Insulation <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
           <div class="option-row" data-field="insulation">
             <label class="option"><input type="radio" name="insulation" value="regularBatt" checked> Regular Batt</label>
             <label class="option"><input type="radio" name="insulation" value="sprayFoam"> Spray Foam</label>
             <label class="option"><input type="radio" name="insulation" value="battPlusRigid"> Batt + Rigid</label>
           </div>
-        </section>
-
-        <section class="field-group">
-          <label>Window &amp; Door Package</label>
-          <div class="option-row" data-field="windowDoorPackage">
-            <label class="option"><input type="radio" name="windowDoorPackage" value="package7" checked> 7' Package</label>
-            <label class="option"><input type="radio" name="windowDoorPackage" value="package8"> 8' Package</label>
+          <div class="help-panel" style="display:none;">
+            <p>Insulation keeps heat in during winter and out in summer. Better insulation costs more up front but lowers your energy bills.</p>
+            <p><b>Regular Batt</b> — the standard fluffy fibreglass insulation in rolls. Meets code and is the most affordable.</p>
+            <p><b>Spray Foam</b> — expands to seal every gap and crack, giving a much tighter, more energy-efficient home with fewer drafts. <span class="tip">Costs more up front, but can noticeably cut heating bills and improve comfort — often worth it in our cold climate.</span></p>
+            <p><b>Batt + Rigid</b> — regular batt inside, plus a layer of rigid foam board on the outside. The foam stops heat escaping through the wood studs ("thermal bridging"), so it's more efficient than batt alone — a middle option between batt and full spray foam.</p>
           </div>
         </section>
 
         <section class="field-group">
-          <label>Exterior Siding</label>
+          <label>Window &amp; Door Package <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
+          <div class="option-row" data-field="windowDoorPackage">
+            <label class="option"><input type="radio" name="windowDoorPackage" value="package7" checked> 7' Package</label>
+            <label class="option"><input type="radio" name="windowDoorPackage" value="package8"> 8' Package</label>
+          </div>
+          <div class="help-panel" style="display:none;">
+            <p>The height of your windows and main doors.</p>
+            <p><b>7' Package</b> — standard-height windows and doors. Included in the base price.</p>
+            <p><b>8' Package</b> — taller windows and doors throughout. Lets in more natural light and gives a more open, upscale feel. Adds cost.</p>
+          </div>
+        </section>
+
+        <section class="field-group">
+          <label>Exterior Siding <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
           <div class="option-row" data-field="cladding">
             <label class="option"><input type="radio" name="cladding" value="vinyl" checked> Vinyl</label>
             <label class="option"><input type="radio" name="cladding" value="metal"> Metal</label>
@@ -491,10 +700,18 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
             <label class="option"><input type="radio" name="cladding" value="brickStone"> Brick / Stone</label>
           </div>
           <p class="field-hint">Your main exterior material. A bit of stone or brick accent trim is already included.</p>
+          <div class="help-panel" style="display:none;">
+            <p>The material that covers the outside of your home. More durable materials cost more but last longer and need less upkeep.</p>
+            <p><b>Vinyl</b> — the most common and affordable. Low maintenance, lots of colours.</p>
+            <p><b>Metal</b> — durable, modern look, long-lasting. Costs more than vinyl.</p>
+            <p><b>Fiber Cement</b> — a premium, very durable board (like Hardie) that looks like wood but resists rot, fire, and pests.</p>
+            <p><b>Board &amp; Batten</b> — vertical panels with a modern-farmhouse look. Mid-range.</p>
+            <p><b>Brick / Stone</b> — the most durable and highest-end exterior. Classic, nearly maintenance-free, and the most expensive.</p>
+          </div>
         </section>
 
         <section class="field-group">
-          <label>Bathrooms</label>
+          <label>Bathrooms <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
           <div class="option-row" data-field="bathrooms">
             <label class="option"><input type="radio" name="bathrooms" value="1" checked> 1 Full</label>
             <label class="option"><input type="radio" name="bathrooms" value="1.5"> 1.5</label>
@@ -505,6 +722,11 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
           </div>
           <div class="option-row" data-field="ensuite" style="margin-top:8px;">
             <label class="option"><input type="checkbox" name="ensuite"> Spa ensuite — soaker tub + custom glass shower</label>
+          </div>
+          <div class="help-panel" style="display:none;">
+            <p>A <b>full</b> bathroom has a toilet, sink, and a tub or shower. A <b>half</b> bath (the ".5") has just a toilet and sink — a "powder room" for guests.</p>
+            <p>So <b>2.5</b> means two full bathrooms plus one half bath.</p>
+            <p><b>Spa ensuite</b> — upgrades your main (master) bathroom to a separate soaking tub and a custom tiled glass shower, instead of a standard tub/shower combo.</p>
           </div>
         </section>
 
@@ -526,12 +748,19 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
         </section>
 
         <section class="field-group">
-          <label>Heating</label>
+          <label>Heating <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
           <div class="option-row" data-field="heating">
             <label class="option"><input type="radio" name="heating" value="baseboard" checked> Baseboard</label>
             <label class="option"><input type="radio" name="heating" value="forcedAir"> Forced Air</label>
             <label class="option"><input type="radio" name="heating" value="geothermal"> Geothermal</label>
             <label class="option"><input type="radio" name="heating" value="minisplitBaseboard"> Minisplit + Baseboard</label>
+          </div>
+          <div class="help-panel" style="display:none;">
+            <p>How your home is heated (and sometimes cooled). Cheaper to install often means more expensive to run, and vice versa.</p>
+            <p><b>Baseboard</b> — electric heaters along the walls. Cheapest to install and simple, but can cost more to run.</p>
+            <p><b>Forced Air</b> — a central furnace pushes warm air through ducts. Even heat, and the same ducts can carry air conditioning.</p>
+            <p><b>Geothermal</b> — uses the steady temperature underground to heat and cool very efficiently. Expensive to install, but the lowest running cost and very green.</p>
+            <p><b>Minisplit + Baseboard</b> — efficient heat-pump "mini-splits" (heat and cool) with baseboards as backup. <span class="tip">A popular, efficient combo for our climate.</span></p>
           </div>
         </section>
 
@@ -1018,10 +1247,18 @@ function formatModifier(v) { v = v || 0; if (v === 0) return '$0/sqft'; return `
 function formatCurrency(v) { return `$${Math.round(v).toLocaleString()}`; }
 function formatArea(s) { return `${(Math.round(s * 10) / 10).toLocaleString()} sqft`; }
 
+function syncVisualCards() {
+  document.querySelectorAll('.visual-card').forEach((card) => {
+    const inp = card.querySelector('input');
+    card.classList.toggle('is-selected', !!(inp && inp.checked));
+  });
+}
+
 let lastCalc = null;
 function renderResults() {
   const c = calculateEstimate();
   lastCalc = c;
+  syncVisualCards();
   garageAreaEl.textContent = `= ${formatArea(c.garageSqft)}`;
   deckAreaEl.textContent = `= ${formatArea(c.deckSqft)}`;
 
@@ -1064,6 +1301,22 @@ function renderResults() {
     }
   }
 
+  // Bedroom fit-check — a bedroom needs ~100+ sqft by code, plus the home needs living/kitchen/baths/halls.
+  // Rule of thumb: ~275 sqft of total home per bedroom is realistic; below that is tight.
+  const bedroomNote = document.getElementById('bedroomNote');
+  if (bedroomNote) {
+    const beds = parseInt(getRadioValue('bedrooms')) || 0;
+    const plus = beds >= 6 ? '+' : '';
+    if (c.livingSqft > 0 && beds > 0 && c.livingSqft / beds < 275) {
+      const comfortable = Math.max(1, Math.floor(c.livingSqft / 300));
+      const needed = Math.ceil((beds * 300) / 50) * 50;
+      bedroomNote.innerHTML = `⚠ ${beds}${plus} bedrooms is tight for ${c.livingSqft.toLocaleString()} sq ft. A home this size usually fits about <b>${comfortable} bedroom${comfortable === 1 ? '' : 's'}</b> comfortably. For ${beds}${plus} bedrooms, plan for roughly <b>${needed.toLocaleString()}+ sq ft</b>.`;
+      bedroomNote.style.display = 'block';
+    } else {
+      bedroomNote.style.display = 'none';
+    }
+  }
+
   const totalEl = document.getElementById('results-total');
   const summary = document.getElementById('results-persqft');
   const garageEl = document.getElementById('results-garage');
@@ -1096,6 +1349,18 @@ form.addEventListener('submit', (e) => {
 });
 form.addEventListener('input', renderResults);
 
+// "What's this?" plain-language help toggles
+document.querySelectorAll('.help-toggle').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const panel = btn.closest('.field-group').querySelector('.help-panel');
+    if (!panel) return;
+    const show = panel.style.display === 'none' || !panel.style.display;
+    panel.style.display = show ? 'block' : 'none';
+    btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+    btn.textContent = show ? 'Hide' : 'ⓘ What’s this?';
+  });
+});
+
 document.getElementById('reset-btn').addEventListener('click', () => {
   form.reset(); syncConditionals(); renderResults();
   document.getElementById('floor1').focus();
@@ -1115,6 +1380,7 @@ function notifyLead(name, email, c) {
   fd.append('Main floor (sqft)', c ? c.floor1 : '');
   fd.append('Second floor (sqft)', c ? c.floor2 : '');
   fd.append('Levels', getRadioValue('levels'));
+  fd.append('Bedrooms', getRadioValue('bedrooms'));
   fd.append('Foundation', getRadioValue('foundation'));
   fd.append('Garage sqft', c ? c.garageSqft : '');
   fd.append('Finishes', getRadioValue('finishes'));

@@ -139,6 +139,7 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
 .help-panel p:last-child { margin-bottom: 0; }
 .help-panel b { color: var(--ink); }
 .help-panel .tip { color: var(--red); font-weight: 600; }
+.option-row.disabled { opacity: 0.4; pointer-events: none; }
 /* Visual selectable cards (roof, foundation) */
 .visual-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 11px; margin-top: 4px; }
 .visual-card { position: relative; border: 1px solid var(--border); border-radius: 12px; padding: 10px 8px; background: var(--surface); cursor: pointer; text-align: center; transition: border-color .15s, box-shadow .15s, transform .15s; }
@@ -663,12 +664,27 @@ input[type="number"]:focus, .dim-field input:focus, .lead-field input:focus { ou
         </section>
 
         <section class="field-group">
+          <label>Wall System <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
+          <div class="option-row" data-field="wallSystem">
+            <label class="option"><input type="radio" name="wallSystem" value="woodFrame" checked> Wood Frame</label>
+            <label class="option"><input type="radio" name="wallSystem" value="icf"> ICF (Insulated Concrete)</label>
+          </div>
+          <div class="help-panel" style="display:none;">
+            <p>How the walls of your home are built.</p>
+            <p><b>Wood Frame</b> — the standard method: wood studs, then insulation and sheathing. What most homes use.</p>
+            <p><b>ICF (Insulated Concrete Forms)</b> — foam blocks stacked and filled with reinforced concrete, so the wall is the structure <em>and</em> the insulation in one. <span class="tip">Extremely energy-efficient, quiet, and very storm- and fire-resistant. Costs more up front, but can pay back in lower heating bills and comfort — popular for our climate.</span></p>
+            <p style="margin:8px 0 0;">Because ICF includes high-performance insulation, the Insulation choice below is handled for you when ICF is selected.</p>
+          </div>
+        </section>
+
+        <section class="field-group">
           <label>Insulation <button type="button" class="help-toggle" aria-expanded="false">&#9432; What&rsquo;s this?</button></label>
           <div class="option-row" data-field="insulation">
             <label class="option"><input type="radio" name="insulation" value="regularBatt" checked> Regular Batt</label>
             <label class="option"><input type="radio" name="insulation" value="sprayFoam"> Spray Foam</label>
             <label class="option"><input type="radio" name="insulation" value="battPlusRigid"> Batt + Rigid</label>
           </div>
+          <p class="field-hint" id="icfInsulationNote" style="display:none; color:var(--red); font-weight:600;">Included with your ICF walls — no separate insulation needed.</p>
           <div class="help-panel" style="display:none;">
             <p>Insulation keeps heat in during winter and out in summer. Better insulation costs more up front but lowers your energy bills.</p>
             <p><b>Regular Batt</b> — the standard fluffy fibreglass insulation in rolls. Meets code and is the most affordable.</p>
@@ -1036,6 +1052,7 @@ const PRICING_CONFIG = {
     ceilingHeight: { baseFeet: 8, perFootOver: 15 },       // [MED] 10ft add: Josh +10 / CNJ +50 → +30 total = $15/ft
     windowDoorPackage: { package7: 0, package8: 12 },      // [MED] 8' pkg: Josh ~20 / CNJ 5
     insulation: { regularBatt: 0, sprayFoam: 5, battPlusRigid: 1 },   // [CNJ] real answers (Josh had none)
+    wallSystem: { woodFrame: 0, icf: 18 },   // [EST] ICF (insulated concrete forms) ≈ +5-6% whole-home premium over wood frame; CONFIRM with a contractor who does ICF. ICF includes insulation (insMod forced to 0 when ICF).
     cladding: { vinyl: 0, metal: 15, fiberCement: 25, boardAndBatten: 15, stoneAccenting: 8, brickStone: 15 }, // [CNJ] real (Josh silent); stone nudged off CNJ's bundled $0
     heating: { baseboard: 0, minisplitBaseboard: 0, forcedAir: 15, geothermal: 25 },   // [MED] PER SQFT — HVAC scales with size; Josh flat ÷ ~1750 ≈ CNJ's per-sqft
     complexity: { simple: 0, moderate: 20, complex: 40 },  // extra $/living sqft. Josh implies ~+16/+33, CNJ gave +50/+100 → true 2-way midpoint ≈ +33/+66. Set to +20/40 (Alexander's call, conservative). Only 2 quotes, wide spread — a judgment call, NOT a verified median. Revisit with #3. Watch double-count vs roof/finish.
@@ -1184,11 +1201,13 @@ function calculateEstimate() {
   const chFeet = chChoice === 'other' ? (parseFloat(ceilingHeightOtherInput.value) || living.ceilingHeight.baseFeet) : parseFloat(chChoice);
   const chMod = Math.max(0, chFeet - living.ceilingHeight.baseFeet) * living.ceilingHeight.perFootOver;
   const wdp = getRadioValue('windowDoorPackage'); const wdpMod = living.windowDoorPackage[wdp] || 0;
-  const insulation = getRadioValue('insulation'); const insMod = living.insulation[insulation] || 0;
+  const wallSystem = getRadioValue('wallSystem'); const wallMod = living.wallSystem[wallSystem] || 0;
+  const isIcf = wallSystem === 'icf';
+  const insulation = getRadioValue('insulation'); const insMod = isIcf ? 0 : (living.insulation[insulation] || 0);   // ICF includes insulation
   const siding = getRadioValue('cladding'); const sidingMod = living.cladding[siding] || 0;
   const heating = getRadioValue('heating'); const heatingMod = living.heating[heating] || 0;
   const complexity = getRadioValue('complexity'); const complexityMod = living.complexity[complexity] || 0;
-  const addPerSqft = chMod + wdpMod + insMod + sidingMod + heatingMod + complexityMod;
+  const addPerSqft = chMod + wdpMod + insMod + sidingMod + heatingMod + complexityMod + wallMod;
 
   const livingRate = baseRate + addPerSqft;
   const livingAmount = livingRate * livingSqft;
@@ -1228,6 +1247,7 @@ function calculateEstimate() {
   if (complexityMod) breakdown.push(['Design complexity', `${formatModifier(complexityMod)} living`]);
   if (chMod) breakdown.push(['Ceiling height', `${formatModifier(chMod)} living`]);
   if (wdpMod) breakdown.push(['Window & door package', `${formatModifier(wdpMod)} living`]);
+  if (wallMod) breakdown.push(['ICF walls', `${formatModifier(wallMod)} living (insulation included)`]);
   if (insMod) breakdown.push(['Insulation', `${formatModifier(insMod)} living`]);
   if (sidingMod) breakdown.push(['Exterior siding', `${formatModifier(sidingMod)} living`]);
   if (heatingMod) breakdown.push(['Heating', `${formatModifier(heatingMod)} living`]);
@@ -1317,6 +1337,16 @@ function renderResults() {
     }
   }
 
+  // ICF includes insulation — grey out & disable the insulation choice when ICF is selected.
+  const icfOn = getRadioValue('wallSystem') === 'icf';
+  const insRow = form.querySelector('.option-row[data-field="insulation"]');
+  if (insRow) {
+    insRow.classList.toggle('disabled', icfOn);
+    insRow.querySelectorAll('input').forEach((i) => { i.disabled = icfOn; });
+  }
+  const icfInsNote = document.getElementById('icfInsulationNote');
+  if (icfInsNote) icfInsNote.style.display = icfOn ? 'block' : 'none';
+
   const totalEl = document.getElementById('results-total');
   const summary = document.getElementById('results-persqft');
   const garageEl = document.getElementById('results-garage');
@@ -1371,28 +1401,65 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 // Leave PORTAL_URL empty to switch this off. A failure here never affects the visitor.
 const PORTAL_URL = 'https://portal.innovadesignstudio.ca';
 function notifyLead(name, email, c) {
+  const rv = (n) => getRadioValue(n) || '';
+  const lbl = (m, k) => (m[k] || k || '');
+  // Friendly labels for the NEW fields (existing fields kept raw to match the portal's current parsing).
+  const wallL = { woodFrame: 'Wood frame', icf: 'ICF (insulated concrete)' };
+  const roofL = { shed: 'Shed', gable: 'Gable', hip: 'Hip', multiple: 'Multiple styles' };
+  const cplxL = { simple: 'Simple box', moderate: 'L-shape', complex: 'Complex / custom' };
+  const insL = { regularBatt: 'Regular batt', sprayFoam: 'Spray foam', battPlusRigid: 'Batt + rigid' };
+  const winL = { package7: "7' package", package8: "8' package" };
+  const sideL = { vinyl: 'Vinyl', metal: 'Metal', fiberCement: 'Fiber cement', boardAndBatten: 'Board & batten', brickStone: 'Brick / stone' };
+  const heatL = { baseboard: 'Baseboard', forcedAir: 'Forced air', geothermal: 'Geothermal', minisplitBaseboard: 'Minisplit + baseboard' };
+  const garL = { none: 'None', oneCar: '1 car', twoCar: '2 car', threeCar: '3 car' };
+  const garFinL = { unfinished: 'Unfinished', finished: 'Finished / heated' };
+  const bsmtFinL = { unfinished: 'Unfinished', finished: 'Finished (living space)' };
+  const deckL = { none: 'None', front: 'Front', back: 'Back', frontAndBack: 'Front & back' };
+  const ch = rv('ceilingHeight');
+  const ceilingTxt = ch === 'other' ? ((parseFloat(ceilingHeightOtherInput.value) || '?') + "'") : (ch ? ch + "'" : '');
+
   const fd = new FormData();
   fd.append('_subject', `New Home Cost Calculator lead: ${name}`);
   fd.append('_cc', 'admin@innovadesignstudio.ca');
   fd.append('_template', 'table');
   fd.append('_captcha', 'false');
+  // ── existing fields (unchanged values, so the portal's current handling keeps working) ──
   fd.append('Name', name);
   fd.append('Email', email);
   fd.append('Price guide range', c ? `${formatCurrency(c.low)} – ${formatCurrency(c.high)}` : '(none)');
   fd.append('Living area (sqft)', c ? c.livingSqft : '');
   fd.append('Main floor (sqft)', c ? c.floor1 : '');
   fd.append('Second floor (sqft)', c ? c.floor2 : '');
-  fd.append('Levels', getRadioValue('levels'));
-  fd.append('Bedrooms', getRadioValue('bedrooms'));
-  fd.append('Foundation', getRadioValue('foundation'));
+  fd.append('Levels', rv('levels'));
+  fd.append('Bedrooms', rv('bedrooms'));
+  fd.append('Foundation', rv('foundation'));
   fd.append('Garage sqft', c ? c.garageSqft : '');
-  fd.append('Finishes', getRadioValue('finishes'));
-  fd.append('Kitchen', getRadioValue('kitchen'));
+  fd.append('Finishes', rv('finishes'));
+  fd.append('Kitchen', rv('kitchen'));
+  // ── full build spec (every remaining calculator choice) ──
+  fd.append('Bathrooms', rv('bathrooms'));
+  fd.append('Spa ensuite', form.querySelector('input[name="ensuite"]:checked') ? 'Yes' : 'No');
+  fd.append('Wall system', lbl(wallL, rv('wallSystem')));
+  if (isFullBasement(rv('foundation'))) fd.append('Basement finish', lbl(bsmtFinL, rv('basementFinish')));
+  fd.append('Roof design', lbl(roofL, rv('roofDesign')));
+  fd.append('Design complexity', lbl(cplxL, rv('complexity')));
+  fd.append('Ceiling height', ceilingTxt);
+  fd.append('Insulation', rv('wallSystem') === 'icf' ? 'Included with ICF' : lbl(insL, rv('insulation')));
+  fd.append('Window & door package', lbl(winL, rv('windowDoorPackage')));
+  fd.append('Exterior siding', lbl(sideL, rv('cladding')));
+  fd.append('Heating', lbl(heatL, rv('heating')));
+  fd.append('Garage', lbl(garL, rv('garage')));
+  if (rv('garage') && rv('garage') !== 'none') fd.append('Garage finish', lbl(garFinL, rv('garageFinish')));
+  fd.append('Decks', lbl(deckL, rv('decks')));
+  fd.append('Deck sqft', c ? c.deckSqft : '');
   try {
     fetch('https://formsubmit.co/ajax/alexander@innovadesignstudio.ca', {
       method: 'POST', headers: { Accept: 'application/json' }, body: fd,
     }).catch((e) => console.error('Lead notify failed:', e));
   } catch (e) { console.error('Lead notify failed:', e); }
+
+  // Also drop the lead into the Innova client portal. The first 9 keys are unchanged (the portal already
+  // reads them); everything after is the rest of the build spec, which the portal shows automatically.
   try {
     if (PORTAL_URL) {
       fetch(PORTAL_URL + '/api/submissions', {
@@ -1402,8 +1469,16 @@ function notifyLead(name, email, c) {
           range: c ? `${formatCurrency(c.low)} – ${formatCurrency(c.high)}` : '',
           data: {
             livingSqft: c ? c.livingSqft : '', mainFloorSqft: c ? c.floor1 : '', secondFloorSqft: c ? c.floor2 : '',
-            levels: getRadioValue('levels'), bedrooms: getRadioValue('bedrooms'), foundation: getRadioValue('foundation'),
-            garageSqft: c ? c.garageSqft : '', finishes: getRadioValue('finishes'), kitchen: getRadioValue('kitchen'),
+            levels: rv('levels'), bedrooms: rv('bedrooms'), foundation: rv('foundation'),
+            garageSqft: c ? c.garageSqft : '', finishes: rv('finishes'), kitchen: rv('kitchen'),
+            bathrooms: rv('bathrooms'), ensuite: form.querySelector('input[name="ensuite"]:checked') ? 'yes' : 'no',
+            wallSystem: rv('wallSystem'),
+            basementFinish: isFullBasement(rv('foundation')) ? rv('basementFinish') : '',
+            roofDesign: rv('roofDesign'), complexity: rv('complexity'), ceilingHeight: ch,
+            insulation: rv('wallSystem') === 'icf' ? 'includedWithIcf' : rv('insulation'),
+            windowDoorPackage: rv('windowDoorPackage'), siding: rv('cladding'), heating: rv('heating'),
+            garage: rv('garage'), garageFinish: (rv('garage') && rv('garage') !== 'none') ? rv('garageFinish') : '',
+            decks: rv('decks'), deckSqft: c ? c.deckSqft : '',
           },
         }),
       }).catch(() => {});

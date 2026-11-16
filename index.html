@@ -1490,6 +1490,7 @@ function notifyLead(name, email, c) {
             windowDoorPackage: rv('windowDoorPackage'), siding: rv('cladding'), heating: rv('heating'),
             garage: rv('garage'), garageFinish: (rv('garage') && rv('garage') !== 'none') ? rv('garageFinish') : '',
             decks: rv('decks'), deckSqft: c ? c.deckSqft : '',
+            ...innovaAttribution(),
           },
         }),
       }).catch(() => {});
@@ -1504,6 +1505,7 @@ document.getElementById('lead-form').addEventListener('submit', (e) => {
   if (!name || !email) return;
   leadName = name;
   notifyLead(name, email, lastCalc);
+  innovaTrackCalculatorComplete(lastCalc, getRadioValue('levels'));
   unlocked = true;
   renderResults();
   populateReport();
@@ -1530,6 +1532,94 @@ document.getElementById('download-pdf').addEventListener('click', () => { popula
 
 syncConditionals();
 renderResults();
+</script>
+<script>
+/* Innova tracking. Events go through Google Tag Manager's dataLayer (GA4 is configured inside GTM,
+   never here). Never send names or emails in events. Keep the attribution logic in sync with the
+   main site (app/lib/attribution.ts). */
+(function () {
+  var COOKIE = 'innova_attr', MAX_AGE = 2592000;
+  function track(name, params) {
+    try {
+      window.dataLayer = window.dataLayer || [];
+      var clean = {};
+      for (var k in (params || {})) { if (params[k] !== undefined && params[k] !== '') clean[k] = params[k]; }
+      (function () { window.dataLayer.push(arguments); })('event', name, clean); // gtag-style command
+    } catch (e) {}
+  }
+  function clip(v, n) { return v ? String(v).trim().slice(0, n || 120) : ''; }
+  function readCookie() {
+    try { var m = document.cookie.match(new RegExp('(?:^|; )' + COOKIE + '=([^;]*)')); return m ? JSON.parse(decodeURIComponent(m[1])) : {}; }
+    catch (e) { return {}; }
+  }
+  function writeCookie(v) {
+    var h = location.hostname;
+    var shared = (h === 'innovadesignstudio.ca' || /\.innovadesignstudio\.ca$/.test(h)) ? '; Domain=.innovadesignstudio.ca' : '';
+    document.cookie = COOKIE + '=' + encodeURIComponent(JSON.stringify(v)) + '; Max-Age=' + MAX_AGE + '; Path=/; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '') + shared;
+  }
+  function externalReferrer() {
+    try {
+      if (!document.referrer) return '';
+      var u = new URL(document.referrer);
+      if (u.hostname === location.hostname || /innovadesignstudio\.ca$/.test(u.hostname)) return '';
+      return (u.origin + u.pathname).slice(0, 300);
+    } catch (e) { return ''; }
+  }
+  function touchFromUrl() {
+    var p = new URLSearchParams(location.search);
+    var s = clip(p.get('utm_source')), m = clip(p.get('utm_medium')), c = clip(p.get('utm_campaign')), g = clip(p.get('gclid'), 200);
+    if (!s && !m && !c && !g) return null;
+    return { s: s || (g ? 'google' : ''), m: m || (g ? 'cpc' : ''), c: c, g: g };
+  }
+  function captureAttribution() {
+    try {
+      var stored = readCookie(), touch = touchFromUrl(), ref = externalReferrer();
+      if (touch) { touch.r = ref || stored.r || ''; writeCookie(touch); }
+      else if (!stored.s && !stored.m && !stored.c && !stored.g) { writeCookie({ r: ref || stored.r || '' }); }
+    } catch (e) {}
+  }
+
+  // Where a lead came from, added to the submission's data object (no table changes)
+  window.innovaAttribution = function () {
+    try {
+      var stored = readCookie(), url = touchFromUrl();
+      var t = url || ((stored.s || stored.m || stored.c || stored.g) ? stored : null);
+      var out = {
+        utm_source: (t && t.s) || 'direct',
+        utm_medium: (t && t.m) || 'none',
+        utm_campaign: (t && t.c) || 'none',
+        page: 'calculator',
+        referrer: externalReferrer() || stored.r || 'direct',
+        submitted_at_page: (location.origin + location.pathname + location.search).slice(0, 500)
+      };
+      if (t && t.g) out.gclid = t.g;
+      return out;
+    } catch (e) { return {}; }
+  };
+
+  // Secondary conversion: a price range was shown and name + email were submitted
+  window.innovaTrackCalculatorComplete = function (c, levels) {
+    if (!c) return;
+    track('calculator_complete', {
+      living_sqft: Number(c.livingSqft) || undefined,
+      levels: levels || undefined,
+      price_low: Math.round(c.low),
+      price_high: Math.round(c.high)
+    });
+  };
+
+  captureAttribution();
+  track('view_calculator', {});
+
+  // Phone and email taps
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a) return;
+    var href = (a.getAttribute('href') || '').toLowerCase();
+    if (href.indexOf('tel:') === 0 && href.replace(/\D/g, '').slice(-10) === '5063004380') track('phone_click', { page: 'calculator' });
+    else if (href.indexOf('mailto:') === 0 && href.indexOf('info@innovadesignstudio.ca') !== -1) track('email_click', { page: 'calculator' });
+  });
+})();
 </script>
 </body>
 </html>
